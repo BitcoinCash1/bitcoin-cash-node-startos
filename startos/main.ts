@@ -11,6 +11,11 @@ export const main = sdk.setupMain(async ({ effects }) => {
    * ======================== Setup ========================
    */
 
+  // Re-write bitcoin.conf on every startup to strip any legacy top-level
+  // rpcbind/rpcallowip entries (BCHN rejects those when running chipnet/regtest).
+  // They are passed as CLI args below instead.
+  await bitcoinConfFile.merge(effects, {})
+
   // Read bitcoin.conf (watch for changes — restarts on change)
   const bitcoinConf = await bitcoinConfFile.read().const(effects)
 
@@ -57,6 +62,8 @@ export const main = sdk.setupMain(async ({ effects }) => {
     `-conf=${rootDir}/bitcoin.conf`,
     `-datadir=${rootDir}`,
     `-rpcport=${rpcPort}`,
+    `-rpcbind=127.0.0.1`,
+    '-rpcallowip=0.0.0.0/0',
     ...(netFlag ? [netFlag] : []),
     ...(torIp ? [`-onion=${torIp}:9050`] : []),
     ...(reindexBlockchain ? ['-reindex'] : []),
@@ -128,7 +135,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
           try {
             const res = await rpcCall('getrpcinfo')
             return res.exitCode === 0
-              ? { message: 'The BCHN RPC Interface is ready', result: 'success' }
+              ? { message: 'BCHN RPC Interface is ready', result: 'success' }
               : { message: 'The BCHN RPC Interface is not ready', result: 'starting' }
           } catch {
             return { message: 'The BCHN RPC Interface is not ready', result: 'starting' }
@@ -209,6 +216,16 @@ export const main = sdk.setupMain(async ({ effects }) => {
               : 'Outbound only. Add an onion address to enable inbound.',
           }
         },
+      },
+      requires: [],
+    })
+    .addHealthCheck('i2p', {
+      ready: {
+        display: 'I2P',
+        fn: () => ({
+          result: 'disabled' as const,
+          message: 'I2P support is not implemented yet.',
+        }),
       },
       requires: [],
     })
