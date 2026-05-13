@@ -97,7 +97,20 @@ Compatible with `bitcoin-cli`, Fulcrum, and any standard Bitcoin Cash wallet or 
 
 ### Tor / Onion Routing
 
-If StartOS is configured with Tor, the node automatically connects via onion routing — no extra setup needed.
+Outbound `.onion` peer traffic is routed automatically when the **Tor** service is installed and running — BCHN is started with `-onion=<tor>:9050` (the Start9 Tor service's SOCKS5 port).
+
+**Modes:**
+
+- **Hybrid (default):** clearnet peers reached over IPv4/IPv6, `.onion` peers reached via Tor. No DNS leaks of `.onion` lookups.
+- **Tor-only:** set **Allowed Networks** to just **Tor (.onion)**. BCHN is then started with `-proxy=<tor>:9050 -dnsseed=0 -dns=0` so every outbound connection and address lookup goes through Tor. You must add at least one `.onion` peer under **Add Peers** (DNS seeds are disabled in this mode).
+
+**Inbound `.onion` (be reachable on Tor):**
+
+1. Install the **Tor** service.
+2. Open the Bitcoin Cash Node service page → **Interfaces** → **Peer Interface** → URL table → **Add Onion Service**. Tor will create a hidden service forwarding `<your.onion>:8333 → bitcoincashd:8333`.
+3. Advertise that address: under **Configure → Advanced → raw** add an `externalip` entry of the form `<your.onion>:8333` so peers learn how to reach you.
+
+> BCHN's automatic onion-listen feature (`-listenonion`) requires a TCP Tor control port (9051) with cookie or password auth. The Start9 Tor service only exposes a Unix control socket, so `-listenonion=0` is set unconditionally — use the URL-plugin flow above for inbound onion connectivity.
 
 ## May 2026 Network Upgrade
 

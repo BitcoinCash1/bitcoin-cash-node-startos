@@ -57,6 +57,17 @@ export const main = sdk.setupMain(async ({ effects }) => {
     ((bitcoinConf?.raw as Record<string, unknown> | undefined)?.externalip as
       (string | undefined)[] | undefined) ?? []
 
+  // ── Tor mode selection ─────────────────────────────────────────────────────
+  // tor-startos exposes SOCKS5 on TCP 9050 but its control interface is a
+  // Unix socket (/var/lib/tor/control.sock), not TCP 9051. BCHN's
+  // `-listenonion=1` (default when listening) tries 127.0.0.1:9051 inside the
+  // BCHN container and fails silently — explicitly disable it. Inbound .onion
+  // is published via the Tor service's URL plugin attached to the Peer interface.
+  //
+  // When the user restricts Allowed Networks to Tor only, route everything via
+  // SOCKS so clearnet DNS-seed / addrman fallbacks don't leak the node IP.
+  const torOnly = onlynetList.length === 1 && onlynetList[0] === 'onion'
+
   // ── Build command args ─────
   const daemonArgs: string[] = [
     `-conf=${rootDir}/bitcoin.conf`,
@@ -65,7 +76,13 @@ export const main = sdk.setupMain(async ({ effects }) => {
     `-rpcbind=127.0.0.1`,
     '-rpcallowip=0.0.0.0/0',
     ...(netFlag ? [netFlag] : []),
-    ...(torIp ? [`-onion=${torIp}:9050`] : []),
+    ...(torIp
+      ? [
+          `-onion=${torIp}:9050`,
+          '-listenonion=0',
+          ...(torOnly ? [`-proxy=${torIp}:9050`, '-dnsseed=0', '-dns=0'] : []),
+        ]
+      : []),
     ...(reindexBlockchain ? ['-reindex'] : []),
     ...(reindexChainstate ? ['-reindex-chainstate'] : []),
   ]
