@@ -6,12 +6,18 @@ export const peerInterfaceId = 'peer'
 export const zmqInterfaceId = 'zmq'
 
 // ── Network types ─────────────────────────────────────────────────────────────
-export const NETWORKS = ['mainnet', 'testnet3', 'chipnet', 'regtest'] as const
+// BCHN supports six networks: mainnet, testnet3, testnet4, scalenet, chipnet, regtest.
+// We override -rpcport / -port on the BCHN CLI so the daemon's network-default
+// ports never clash with our internal ZMQ ports (28332-28335). testnet4's BCHN
+// default p2p/rpc is 28333/28332 — we explicitly remap to 28342/28343 below.
+export const NETWORKS = ['mainnet', 'testnet3', 'testnet4', 'scalenet', 'chipnet', 'regtest'] as const
 export type Network = (typeof NETWORKS)[number]
 
 export const networkPorts: Record<Network, { rpc: number; peer: number }> = {
   mainnet:  { rpc: 8332,  peer: 8333  },
   testnet3: { rpc: 18332, peer: 18333 },
+  testnet4: { rpc: 28342, peer: 28343 }, // remapped from BCHN default 28332/28333 to avoid ZMQ collision
+  scalenet: { rpc: 38332, peer: 38333 },
   chipnet:  { rpc: 48332, peer: 48333 },
   regtest:  { rpc: 18443, peer: 18444 },
 }
@@ -19,6 +25,8 @@ export const networkPorts: Record<Network, { rpc: number; peer: number }> = {
 export const networkFlag: Record<Network, string | null> = {
   mainnet:  null,
   testnet3: '-testnet',
+  testnet4: '-testnet4',
+  scalenet: '-scalenet',
   chipnet:  '-chipnet',
   regtest:  '-regtest',
 }

@@ -24,7 +24,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
   const network: Network = store?.network ?? 'mainnet'
   const rpcUser = store?.rpcUser ?? 'bitcoincashd'
   const rpcPassword = store?.rpcPassword ?? ''
-  const { rpc: rpcPort } = networkPorts[network]
+  const { rpc: rpcPort, peer: peerPort } = networkPorts[network]
   const netFlag = networkFlag[network]
 
   console.log('Starting Bitcoin Cash Node (BCHN)!')
@@ -73,6 +73,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
     `-conf=${rootDir}/bitcoin.conf`,
     `-datadir=${rootDir}`,
     `-rpcport=${rpcPort}`,
+    `-port=${peerPort}`,
     `-rpcbind=127.0.0.1`,
     '-rpcallowip=0.0.0.0/0',
     ...(netFlag ? [netFlag] : []),
