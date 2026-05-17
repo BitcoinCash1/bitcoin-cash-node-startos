@@ -1,163 +1,133 @@
-# Instructions for Bitcoin Cash Node on StartOS
+# Bitcoin Cash Node (BCHN)
 
-This package provides Bitcoin Cash Node (BCHN) v29.0.0 as a StartOS service, enabling easy deployment and management of a Bitcoin Cash full node.
+Bitcoin Cash Node begins its Initial Block Download — fetching and verifying the
+entire BCH chain — the moment it launches; nothing needs configuring first. This
+page covers what is specific to running it on StartOS.
 
-## Installation
+## What you get on StartOS
 
-1. **Download the Package**: Obtain the `bitcoin-cash-node.s9pk` file from the [releases page](https://github.com/BitcoinCash1/bitcoin-cash-node-startos/releases) or build it yourself from source.
+- A full BCH node — downloads, verifies, and relays the entire blockchain, then stays in sync.
+- A **JSON-RPC interface** on port 8332 that other StartOS services (Fulcrum BCH, BCH
+  Explorer, mining pools) and external wallets connect to.
+- **ZeroMQ** block and transaction notifications on ports 28332/28333 for services
+  that subscribe to them (enable in Config). Double Spend Proof (DSP) ZMQ streams
+  on ports 28334/28335 are always active.
+- **Tor** support — when Tor is installed, BCHN routes outbound peer connections through
+  Tor. A hybrid mode (clearnet + onion) runs by default; restrict to onion-only via
+  Config if you want a fully private node.
+- Multiple networks: **mainnet**, **testnet3**, **testnet4**, **scalenet**, **chipnet**, and **regtest**.
+- The **May 2026 network upgrade** is included: P2S32 (32-byte script hash),
+  native loops, functions, and bitwise opcodes — required for continued operation
+  after May 15, 2026.
 
-2. **Install on StartOS**:
-   - Navigate to your StartOS web interface
-   - Go to **Services** → **Install Service**
-   - Upload the `bitcoin-cash-node.s9pk` file
-   - Follow the installation prompts
+## Getting started
 
-## Initial Configuration
+There is no setup wizard and nothing required to start using Bitcoin Cash Node — it
+begins syncing on first launch.
 
-After installation, your Bitcoin Cash Node will:
+Open the **Dashboard** to watch sync progress. A full Initial Block Download takes
+anywhere from several hours to a few days depending on your hardware, disk, and
+network speed.
 
-1. **Start Syncing**: Automatically begin downloading and validating the Bitcoin Cash blockchain
-2. **Expose RPC**: JSON-RPC interface available on port 8332 (mainnet)
-3. **Connect to Network**: Establish P2P connections on port 8333
-4. **DSP Streams Active**: Double Spend Proof ZMQ streams are always on (ports 28334/28335)
+Services that depend on Bitcoin Cash Node — Fulcrum BCH, BCH Explorer, mining pools —
+install, connect, and configure themselves automatically. They report that they are
+waiting for Bitcoin Cash Node to sync until IBD finishes; no manual wiring is needed.
 
-Initial blockchain sync takes time depending on your hardware and connection speed.
+## RPC access
 
-## Configuration Options
+The JSON-RPC API listens on **port 8332** (mainnet). Dependent StartOS services
+connect and configure themselves automatically when you install them.
 
-All settings are managed through the StartOS service interface under **Config**.
+For an external wallet or app, run **Actions → View RPC Credentials** to get the
+auto-generated username, password, and port for your selected network.
 
-### Network
-Select the Bitcoin Cash network to run:
-- **Mainnet** (default) — live Bitcoin Cash network
-- **Testnet3** — public test network
-- **Chipnet** — CHIP testing network
-- **Regtest** — local regression testing
+## Configuration
 
-> Changing network switches the active blockchain data directory and port set.
+Four areas of settings are exposed under **Config**.
 
-### Node Settings
-- **Transaction Index** (`txindex`) — Build a full transaction index. Required by Fulcrum and other indexers. Incompatible with pruning.
-- **ZeroMQ Notifications** — Enable real-time block and transaction push events (ports 28332/28333). Required by Fulcrum, block explorers, and similar tools.
-- **Maximum Connections** — Maximum number of peer connections (default: 125)
+- **Network** — mainnet (default), testnet3, testnet4, scalenet, chipnet, or regtest.
+  Changing network switches the data directory and port set.
+- **Transaction Index** (`txindex`) — required by Fulcrum BCH, BCH Explorer, and any
+  service that looks up arbitrary txids. Incompatible with pruning.
+- **ZeroMQ Notifications** — enable real-time block/tx push events on ports
+  28332/28333. Required by Fulcrum and block explorers.
+- **Mempool & Relay** — mempool size, minimum relay fee, expiry, and OP_RETURN/
+  bare-multisig relay policy.
+- **RPC Settings** — timeout, thread count, work-queue depth.
+- **Maximum Connections** — maximum number of peer connections (default: 125).
+- **Excessive Block Size** — maximum accepted block size (default: 32 MB).
+- **Pruning** — limit on-disk blockchain storage; disables `txindex` when active.
+- **Allowed Networks / Peers** — restrict outbound to IPv4, IPv6, or Tor only;
+  add manual `addnode` peers.
 
-### RPC Settings
-- **RPC Server Timeout** — Seconds before an RPC call times out (default: 30)
-- **RPC Threads** — Number of threads for handling RPC calls (default: 4)
-- **RPC Work Queue** — Depth of the RPC request queue (default: 64)
+## Tor networking
 
-### Mempool & Relay
-- **Max Mempool Size** — Maximum memory usage for the mempool in MB (default: 300)
-- **Minimum Relay Fee** — Minimum fee rate (BCH/kB) for relaying transactions (default: 0.00001)
-- **Mempool Expiry** — Hours before unconfirmed transactions are evicted (default: 336)
+By default BCHN runs in hybrid mode: clearnet peers over IPv4/IPv6 and `.onion`
+peers over Tor (when Tor is installed). To go fully Tor-only, set **Config →
+Allowed Networks** to **Tor only** — BCHN then disables DNS seeds and routes
+everything through Tor.
 
-### Pruning
-- **Prune Target** — Limit blockchain storage in MB (minimum 550 MB when enabled). Disables transaction index when active.
+For inbound onion connectivity (being reachable from Tor): open **Interfaces →
+Peer Interface → Add Onion Service** in StartOS. This creates a hidden service
+forwarding your `.onion:8333` to the node. Then add your `.onion` address under
+**Config → External IPs** so peers learn how to reach you.
 
-### Block Policy
-- **Excessive Block Size** — Maximum accepted block size in bytes (default: 32 MB)
-- **Ancestor Limit** — Maximum in-mempool ancestors per transaction (default: 25)
-- **Descendant Limit** — Maximum in-mempool descendants per transaction (default: 25)
+## Maintenance actions
 
-### View RPC Credentials
-Displays the auto-generated RPC username, password, and port for use with external tools and wallets.
+- **View RPC Credentials** — display the auto-generated username, password, and port.
+- **Runtime Information** — live connection count, block height, sync progress, and fork status.
+- **Reindex Blockchain** — rebuild blocks and chainstate from scratch.
+- **Reindex Chainstate** — rebuild only the UTXO set from stored block files (hidden on pruned nodes).
+- **Mempool Settings** — adjust mempool size and relay policy.
+- **Peer Settings** — configure allowed networks, add/remove peers.
+- **RPC Settings** — tune timeout, threads, and queue depth.
+- **Delete Peer List** — remove a corrupted `peers.dat`. Stop the service first.
 
-## Network Ports
+## Ports
 
-| Port | Protocol | Purpose |
-|------|----------|---------|
-| 8332 | HTTP | RPC interface (mainnet) |
-| 8333 | TCP | P2P network (mainnet) |
-| 18332 | HTTP | RPC interface (testnet3) |
-| 18333 | TCP | P2P network (testnet3) |
-| 48332 | HTTP | RPC interface (chipnet) |
-| 48333 | TCP | P2P network (chipnet) |
-| 18443 | HTTP | RPC interface (regtest) |
-| 18444 | TCP | P2P network (regtest) |
-| 28332 | TCP | ZeroMQ block notifications (when enabled) |
-| 28333 | TCP | ZeroMQ transaction notifications (when enabled) |
-| 28334 | TCP | ZeroMQ DSP hash notifications (always on) |
-| 28335 | TCP | ZeroMQ DSP raw tx notifications (always on) |
+| Port  | Protocol | Purpose                                          |
+|-------|----------|--------------------------------------------------|
+| 8332  | HTTP     | JSON-RPC — mainnet                               |
+| 8333  | TCP      | Peer-to-peer — mainnet                           |
+| 18332 | HTTP     | JSON-RPC — testnet3                              |
+| 18333 | TCP      | Peer-to-peer — testnet3                          |
+| 28342 | HTTP     | JSON-RPC — testnet4                              |
+| 28343 | TCP      | Peer-to-peer — testnet4                          |
+| 38332 | HTTP     | JSON-RPC — scalenet                              |
+| 38333 | TCP      | Peer-to-peer — scalenet                          |
+| 48332 | HTTP     | JSON-RPC — chipnet                               |
+| 48333 | TCP      | Peer-to-peer — chipnet                           |
+| 18443 | HTTP     | JSON-RPC — regtest                               |
+| 18444 | TCP      | Peer-to-peer — regtest                           |
+| 28332 | TCP      | ZMQ block notifications (when enabled)           |
+| 28333 | TCP      | ZMQ transaction notifications (when enabled)     |
+| 28334 | TCP      | ZMQ DSP hash notifications (always on)           |
+| 28335 | TCP      | ZMQ DSP raw tx notifications (always on)         |
 
-## Usage
+## May 2026 network upgrade
 
-### RPC API
+BCHN v29.0.0 implements the **May 15, 2026 network upgrade**:
 
-Interact with your node using the RPC credentials from **View RPC Credentials**:
+- **P2S32** — Pay-to-Script-Hash with 32-byte hashes.
+- **Native Loops** — looping opcodes in scripts.
+- **Functions** — script-defined callable functions.
+- **Bitwise Operations** — new bitwise opcodes.
 
-```bash
-# Get blockchain info
-curl --user <rpcuser>:<rpcpassword> \
-  --data-binary '{"jsonrpc":"1.0","id":"1","method":"getblockchaininfo","params":[]}' \
-  -H 'content-type: application/json' \
-  http://<node-ip>:8332/
-```
+Nodes running v28.x stopped following the main chain after the upgrade activated.
+**Upgrade to v29.0.0 immediately if you are on an older version.**
 
-Compatible with `bitcoin-cli`, Fulcrum, and any standard Bitcoin Cash wallet or tool.
+## Limitations
 
-### Tor / Onion Routing
-
-Outbound `.onion` peer traffic is routed automatically when the **Tor** service is installed and running — BCHN is started with `-onion=<tor>:9050` (the Start9 Tor service's SOCKS5 port).
-
-**Modes:**
-
-- **Hybrid (default):** clearnet peers reached over IPv4/IPv6, `.onion` peers reached via Tor. No DNS leaks of `.onion` lookups.
-- **Tor-only:** set **Allowed Networks** to just **Tor (.onion)**. BCHN is then started with `-proxy=<tor>:9050 -dnsseed=0 -dns=0` so every outbound connection and address lookup goes through Tor. You must add at least one `.onion` peer under **Add Peers** (DNS seeds are disabled in this mode).
-
-**Inbound `.onion` (be reachable on Tor):**
-
-1. Install the **Tor** service.
-2. Open the Bitcoin Cash Node service page → **Interfaces** → **Peer Interface** → URL table → **Add Onion Service**. Tor will create a hidden service forwarding `<your.onion>:8333 → bitcoincashd:8333`.
-3. Advertise that address: under **Configure → Advanced → raw** add an `externalip` entry of the form `<your.onion>:8333` so peers learn how to reach you.
-
-> BCHN's automatic onion-listen feature (`-listenonion`) requires a TCP Tor control port (9051) with cookie or password auth. The Start9 Tor service only exposes a Unix control socket, so `-listenonion=0` is set unconditionally — use the URL-plugin flow above for inbound onion connectivity.
-
-## May 2026 Network Upgrade
-
-BCHN v29.0.0 implements the **May 15, 2026 network upgrade**, which adds four consensus-level improvements:
-
-- **P2S32** — Pay-to-Script-Hash with 32-byte hashes
-- **Native Loops** — Looping opcodes in scripts
-- **Functions** — Script-defined callable functions
-- **Bitwise Operations** — New bitwise opcodes
-
-Nodes running v28.x will stop following the main chain after the upgrade activates. **This version (v29.0.0) is required for continued operation.**
-
-## Security Considerations
-
-1. **RPC Credentials**: Auto-generated on install. View them under **View RPC Credentials** — never share them publicly.
-2. **Firewall**: Only expose ports you need. RPC (8332) should not be publicly accessible.
-3. **Pruning**: If disk space is limited, enable pruning — note it disables `txindex`.
-4. **Updates**: Keep the package updated to stay compatible with network upgrades.
-
-## Troubleshooting
-
-**Node not syncing / stuck at 0%**
-- Check your StartOS internet connection
-- Ensure port 8333 (P2P) is reachable
-- If running v28.x after May 15 2026 — upgrade to v29.0.0 immediately
-- Check service logs in StartOS for errors
-
-**RPC not working**
-- Confirm the correct port for your selected network (see ports table above)
-- Retrieve credentials from **View RPC Credentials**
-- Ensure the RPC interface is not firewalled
-
-**High disk usage**
-- Enable **Pruning** in Node Settings (minimum 550 MB target)
-- Note: pruning disables the transaction index
-
-**ZeroMQ not receiving events**
-- Ensure **ZeroMQ Notifications** is enabled in Node Settings
-- DSP streams (28334/28335) are always active regardless of this toggle
+- Blockchain data is not backed up. Backups cover `bitcoin.conf`, credentials,
+  `peers.dat`, and wallet data — block and chainstate data re-sync after a restore.
+- Shutdown can take up to 5 minutes while the database flushes; let it finish rather
+  than force-stopping.
+- Pruning disables `txindex`, which is required by Fulcrum BCH and BCH Explorer.
+- Tor inbound (`-listenonion`) requires a TCP control port not available in the Start9
+  Tor service — use the onion-service URL flow in Interfaces instead.
 
 ## Support
 
-- **BCHN Documentation**: [https://docs.bitcoincashnode.org/](https://docs.bitcoincashnode.org/)
-- **StartOS Documentation**: [https://docs.start9.com/](https://docs.start9.com/)
-- **Community**: [https://bitcoincashnode.org/](https://bitcoincashnode.org/)
-- **Issue Reporting**: [https://gitlab.com/bitcoin-cash-node/bitcoin-cash-node/-/issues](https://gitlab.com/bitcoin-cash-node/bitcoin-cash-node/-/issues)
-
-## Building from Source
-
-See the main [README](../README.md) for instructions on building this package from source code.
+- Package: <https://github.com/BitcoinCash1/bitcoin-cash-node-startos>
+- Upstream: <https://gitlab.com/bitcoin-cash-node/bitcoin-cash-node>
+- Upstream docs: <https://docs.bitcoincashnode.org/>
