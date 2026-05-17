@@ -10,7 +10,7 @@ export const manifest = setupManifest({
   marketingUrl: 'https://bitcoincashnode.org/',
   donationUrl: 'bitcoincash:prnc2exht3zxlrqqcat690tc85cvfuypngh7szx6mk',
   docsUrls: [
-    'https://github.com/BitcoinCash1/bitcoin-cash-node-startos/blob/master/docs/instructions.md',
+    'https://github.com/BitcoinCash1/bitcoin-cash-node-startos/blob/master/instructions.md',
     'https://github.com/bitcoin-cash-node/bitcoin-cash-node',
   ],
   description: { short, long },
