@@ -74,7 +74,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
     `-datadir=${rootDir}`,
     `-rpcport=${rpcPort}`,
     `-port=${peerPort}`,
-    `-rpcbind=127.0.0.1`,
+    `-rpcbind=0.0.0.0`,
     '-rpcallowip=0.0.0.0/0',
     ...(netFlag ? [netFlag] : []),
     ...(torIp
