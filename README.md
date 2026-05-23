@@ -27,7 +27,7 @@ Bitcoin Cash Node is a professional grade full node implementation of the Bitcoi
 
 ## Network Ports
 
-This package runs **mainnet** by default. Network is selectable (mainnet / testnet3 / chipnet / regtest).
+This package runs **mainnet** by default. Network is selectable (mainnet / testnet3 / testnet4 / scalenet / chipnet / regtest).
 
 | Port | Protocol | Purpose |
 |------|----------|---------|
@@ -38,7 +38,7 @@ This package runs **mainnet** by default. Network is selectable (mainnet / testn
 | 28334 | TCP | ZeroMQ DSP hash notifications (always on) |
 | 28335 | TCP | ZeroMQ DSP raw tx notifications (always on) |
 
-> **Note:** BCHN also supports testnet3 (18332/18333), chipnet (48332/48333), and regtest (18443/18444). Testnet4 is excluded — its ports (28332/28333) conflict with ZMQ.
+> **Note:** Testnet3 uses 18332/18333, testnet4 uses 28342/28343 (remapped to avoid ZMQ collision), scalenet uses 38332/38333, chipnet uses 48332/48333, regtest uses 18443/18444.
 
 ## Building from Source
 
@@ -56,7 +56,8 @@ The Bitcoin Cash Node can be configured through the StartOS interface:
 - **Mempool & Relay** — Max mempool size, minimum relay fee, mempool expiry
 - **Pruning** — Limit blockchain storage (incompatible with txindex)
 - **Block Policy** — Excessive block size, ancestor/descendant limits
-- **Network** — Select mainnet, testnet3, chipnet, or regtest
+- **Network** — Select mainnet, testnet3, testnet4, scalenet, chipnet, or regtest
+- **Delete Test Network Data** — Free disk space by removing blockchain data for selected test networks
 - **View RPC Credentials** — Display username, password, and port for external tools
 
 ## Support
