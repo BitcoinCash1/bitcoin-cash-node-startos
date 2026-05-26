@@ -11,11 +11,6 @@ export const main = sdk.setupMain(async ({ effects }) => {
    * ======================== Setup ========================
    */
 
-  // Re-write bitcoin.conf on every startup to strip any legacy top-level
-  // rpcbind/rpcallowip entries (BCHN rejects those when running chipnet/regtest).
-  // They are passed as CLI args below instead.
-  await bitcoinConfFile.merge(effects, {})
-
   // Read bitcoin.conf (watch for changes — restarts on change)
   const bitcoinConf = await bitcoinConfFile.read().const(effects)
 
@@ -165,15 +160,19 @@ export const main = sdk.setupMain(async ({ effects }) => {
     .addHealthCheck('sync-progress', {
       ready: {
         display: 'Blockchain Sync',
+        trigger: sdk.trigger.statusTrigger(30_000, { starting: 5_000, failure: 5_000 }),
         fn: async () => {
           try {
             const res = await rpcCall('getblockchaininfo')
             if (res.exitCode !== 0) return { message: 'Waiting for sync info', result: 'loading' }
             const stdout = res.stdout.toString()
             const info: GetBlockchainInfo = JSON.parse(stdout)
-            if (info.initialblockdownload) {
-              const pct = (info.verificationprogress * 100).toFixed(2)
-              return { message: `Syncing blocks...${pct}%`, result: 'loading' }
+            const pct = info.verificationprogress * 100
+            // Only "syncing" while genuinely behind. On regtest (and a node at
+            // the tip) initialblockdownload can stay true with verificationprogress
+            // already at 1.0 — reporting "Syncing 100%" there is nonsense.
+            if (info.initialblockdownload && pct < 99.99) {
+              return { message: `Syncing blocks...${pct.toFixed(2)}%`, result: 'loading' }
             }
             return {
               message: `Synced — block ${info.blocks}${info.pruned ? ' (pruned)' : ''}`,
@@ -202,6 +201,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
     .addHealthCheck('peer-connections', {
       ready: {
         display: 'Peer Connections',
+        trigger: sdk.trigger.statusTrigger(30_000, { starting: 5_000, failure: 5_000 }),
         fn: async () => {
           try {
             const res = await rpcCall('getpeerinfo')
@@ -234,16 +234,6 @@ export const main = sdk.setupMain(async ({ effects }) => {
               : 'Outbound only. Add an onion address to enable inbound.',
           }
         },
-      },
-      requires: [],
-    })
-    .addHealthCheck('i2p', {
-      ready: {
-        display: 'I2P',
-        fn: () => ({
-          result: 'disabled' as const,
-          message: 'I2P support is not implemented yet.',
-        }),
       },
       requires: [],
     })

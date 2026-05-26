@@ -4,6 +4,10 @@ Bitcoin Cash Node begins its Initial Block Download — fetching and verifying t
 entire BCH chain — the moment it launches; nothing needs configuring first. This
 page covers what is specific to running it on StartOS.
 
+## Documentation
+
+- [Bitcoin Cash Node documentation](https://docs.bitcoincashnode.org/) — the upstream operator and configuration reference for `bitcoind` and `bitcoin-cli`.
+
 ## What you get on StartOS
 
 - A full BCH node — downloads, verifies, and relays the entire blockchain, then stays in sync.
@@ -43,45 +47,45 @@ auto-generated username, password, and port for your selected network.
 
 ## Configuration
 
-Four areas of settings are exposed under **Config**.
+All settings live under **Config**, organized into four actions:
 
 - **Network** — mainnet (default), testnet3, testnet4, scalenet, chipnet, or regtest.
-  Changing network switches the data directory and port set.
-- **Transaction Index** (`txindex`) — required by Fulcrum BCH, BCH Explorer, and any
-  service that looks up arbitrary txids. Incompatible with pruning.
-- **ZeroMQ Notifications** — enable real-time block/tx push events on ports
-  28332/28333. Required by Fulcrum and block explorers.
-- **Mempool & Relay** — mempool size, minimum relay fee, expiry, and OP_RETURN/
-  bare-multisig relay policy.
-- **RPC Settings** — timeout, thread count, work-queue depth.
-- **Maximum Connections** — maximum number of peer connections (default: 125).
-- **Excessive Block Size** — maximum accepted block size (default: 32 MB).
-- **Pruning** — limit on-disk blockchain storage; disables `txindex` when active.
-- **Allowed Networks / Peers** — restrict outbound to IPv4, IPv6, or Tor only;
-  add manual `addnode` peers.
+  Switching network changes the data directory and the RPC/P2P port set.
+- **Node Settings** — transaction index (`txindex`), pruning, ZeroMQ notifications,
+  mempool persistence, database cache/batch size, block-notify script, and wallet
+  files. `txindex` is required by Fulcrum BCH and BCH Explorer and is incompatible
+  with pruning — enabling pruning turns it off.
+- **RPC & Peers Settings** — RPC timeout, threads, and work-queue depth; maximum
+  connections (default 125); upload target; bloom-filter serving; allowed networks;
+  and manual peers (`addnode`).
+- **Mempool & Block Policy** — mempool size, minimum relay fee, expiry, excessive
+  block size (default 32 MB), and ancestor/descendant limits.
 
 ## Tor networking
 
 By default BCHN runs in hybrid mode: clearnet peers over IPv4/IPv6 and `.onion`
-peers over Tor (when Tor is installed). To go fully Tor-only, set **Config →
-Allowed Networks** to **Tor only** — BCHN then disables DNS seeds and routes
-everything through Tor.
+peers over Tor (when Tor is installed). To go fully Tor-only, set **RPC & Peers
+Settings → Allowed Networks** to **Tor (.onion)** only — BCHN then disables DNS
+seeds and routes everything through Tor. In that mode, add at least one `.onion`
+peer under **Add Peers**, since DNS seeds are off.
 
 For inbound onion connectivity (being reachable from Tor): open **Interfaces →
 Peer Interface → Add Onion Service** in StartOS. This creates a hidden service
-forwarding your `.onion:8333` to the node. Then add your `.onion` address under
-**Config → External IPs** so peers learn how to reach you.
+forwarding your `.onion:8333` to the node so peers can reach you.
 
-## Maintenance actions
+## Actions
 
-- **View RPC Credentials** — display the auto-generated username, password, and port.
-- **Runtime Information** — live connection count, block height, sync progress, and fork status.
-- **Reindex Blockchain** — rebuild blocks and chainstate from scratch.
-- **Reindex Chainstate** — rebuild only the UTXO set from stored block files (hidden on pruned nodes).
-- **Mempool Settings** — adjust mempool size and relay policy.
-- **Peer Settings** — configure allowed networks, add/remove peers.
-- **RPC Settings** — tune timeout, threads, and queue depth.
+Beyond the four Config actions above, the service exposes:
+
+- **Node Info** — live version, network, connection count, and sync status (available while running).
+- **View RPC Credentials** — display the username, password, and RPC port for a credential.
+- **Generate RPC Credentials** — create a new `rpcauth` entry for an external service; the password is shown once.
+- **Delete RPC Users** — remove `rpcauth` entries.
+- **Reindex Blockchain** — re-verify every block from genesis (rebuilds index and chainstate).
+- **Reindex Chainstate** — rebuild the UTXO set from stored block files.
 - **Delete Peer List** — remove a corrupted `peers.dat`. Stop the service first.
+- **Delete Transaction Index** — remove a corrupted txindex. Stop the service first.
+- **Delete Test Network Data** — free disk space by deleting block data for selected test networks (testnet3/testnet4/scalenet/chipnet/regtest). Never touches mainnet, and refuses to delete the network the node is currently running on.
 
 ## Ports
 
@@ -118,8 +122,8 @@ Nodes running v28.x stopped following the main chain after the upgrade activated
 
 ## Limitations
 
-- Blockchain data is not backed up. Backups cover `bitcoin.conf`, credentials,
-  `peers.dat`, and wallet data — block and chainstate data re-sync after a restore.
+- Blockchain data is not backed up. Backups cover `bitcoin.conf`, credentials, and
+  wallet data — block, chainstate, and peer data re-sync after a restore.
 - Shutdown can take up to 5 minutes while the database flushes; let it finish rather
   than force-stopping.
 - Pruning disables `txindex`, which is required by Fulcrum BCH and BCH Explorer.
@@ -128,6 +132,6 @@ Nodes running v28.x stopped following the main chain after the upgrade activated
 
 ## Support
 
-- Package: <https://github.com/BitcoinCash1/bitcoin-cash-node-startos>
+- Package: <https://github.com/Start9-Community/bitcoin-cash-node-startos>
 - Upstream: <https://gitlab.com/bitcoin-cash-node/bitcoin-cash-node>
 - Upstream docs: <https://docs.bitcoincashnode.org/>
