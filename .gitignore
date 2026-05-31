@@ -5,6 +5,4 @@ node_modules/
 .vscode/
 docker-images
 javascript
-ncc-cachebitcoin-cash-node/
-start-os/
-startbox
+ncc-cache
