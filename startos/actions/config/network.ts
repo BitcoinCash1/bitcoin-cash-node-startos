@@ -40,6 +40,27 @@ export const networkConfig = sdk.Action.withInput(
     return { network: store?.network ?? 'mainnet' }
   },
   async ({ effects, input }) => {
-    await storeJson.merge(effects, { network: input.network })
+    const store = await storeJson.read().once()
+    const current = store?.network ?? 'mainnet'
+    const next = input.network
+
+    if (current === next) {
+      return {
+        version: '1' as const,
+        title: 'Network Unchanged',
+        message: `BCHN is already configured for ${next}.`,
+        result: null,
+      }
+    }
+
+    await storeJson.merge(effects, { network: next, fullySynced: false })
+    await effects.restart()
+
+    return {
+      version: '1' as const,
+      title: 'Network Updated',
+      message: `Switched BCHN from ${current} to ${next}. Restarting automatically.`,
+      result: null,
+    }
   },
 )
