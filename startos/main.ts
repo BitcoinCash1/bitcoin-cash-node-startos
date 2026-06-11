@@ -26,6 +26,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
   const rpcPassword = store?.rpcPassword ?? ''
   const { rpc: rpcPort, peer: peerPort } = networkPorts[network]
   const netFlag = networkFlag[network]
+  const netLabel = network.charAt(0).toUpperCase() + network.slice(1)
 
   console.log('Starting Bitcoin Cash Node (BCHN)!')
 
@@ -173,10 +174,10 @@ export const main = sdk.setupMain(async ({ effects }) => {
             const info: GetBlockchainInfo = JSON.parse(stdout)
             if (info.initialblockdownload) {
               const pct = (info.verificationprogress * 100).toFixed(2)
-              return { message: `Syncing blocks...${pct}%`, result: 'loading' }
+              return { message: `Syncing blocks... ${pct}% (${netLabel})`, result: 'loading' }
             }
             return {
-              message: `Synced — block ${info.blocks}${info.pruned ? ' (pruned)' : ''}`,
+              message: `Synced — block ${info.blocks}${info.pruned ? ' (pruned)' : ''} (${netLabel})`,
               result: 'success',
             }
           } catch {
