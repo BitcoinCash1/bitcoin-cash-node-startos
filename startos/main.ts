@@ -21,6 +21,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
   const rpcPassword = store?.rpcPassword ?? ''
   const { rpc: rpcPort, peer: peerPort } = networkPorts[network]
   const netFlag = networkFlag[network]
+  const netLabel = network.charAt(0).toUpperCase() + network.slice(1)
 
   console.log('Starting Bitcoin Cash Node (BCHN)!')
 
@@ -172,10 +173,10 @@ export const main = sdk.setupMain(async ({ effects }) => {
             // the tip) initialblockdownload can stay true with verificationprogress
             // already at 1.0 — reporting "Syncing 100%" there is nonsense.
             if (info.initialblockdownload && pct < 99.99) {
-              return { message: `Syncing blocks...${pct.toFixed(2)}%`, result: 'loading' }
+              return { message: `Syncing blocks...${pct.toFixed(2)}% (${netLabel})`, result: 'loading' }
             }
             return {
-              message: `Synced — block ${info.blocks}${info.pruned ? ' (pruned)' : ''}`,
+              message: `Synced — block ${info.blocks}${info.pruned ? ' (pruned)' : ''} (${netLabel})`,
               result: 'success',
             }
           } catch {
