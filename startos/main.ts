@@ -96,9 +96,14 @@ export const main = sdk.setupMain(async ({ effects }) => {
     'node-sub',
   )
 
-  // Helper: run JSON-RPC call via bitcoin-cli
+  // Helper: run JSON-RPC call via bitcoin-cli.
+  // The exec spawns a fresh subcontainer each call. Under host mount-namespace
+  // pressure that spawn can transiently fail ("/proc/1/ns/pid: No such file")
+  // even while bitcoind + RPC are perfectly healthy — which previously left the
+  // "RPC" / sync / peer health checks stuck on "starting" (looked like a crash).
+  // Retry the spawn a few times so those transients don't surface to the UI.
   async function rpcCall(method: string, ...params: unknown[]) {
-    return nodeSub.exec([
+    const args = [
       'bitcoin-cli',
       `-rpcconnect=127.0.0.1`,
       `-rpcport=${rpcPort}`,
@@ -106,7 +111,17 @@ export const main = sdk.setupMain(async ({ effects }) => {
       `-rpcpassword=${rpcPassword}`,
       method,
       ...params.map(String),
-    ])
+    ]
+    let lastErr: unknown
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        return await nodeSub.exec(args)
+      } catch (err) {
+        lastErr = err
+        await new Promise((resolve) => setTimeout(resolve, 500))
+      }
+    }
+    throw lastErr
   }
 
   /**

@@ -257,10 +257,10 @@ export const fullConfigSpec = InputSpec.of({
   }),
   minrelaytxfee: Value.number({
     name: 'Minimum Relay Fee',
-    description: 'Minimum fee rate (BCH/kB) for relaying transactions.',
+    description: 'Minimum fee rate (BCH/kB) for relaying transactions. Must be > 0 — BCHN rejects a value of 0.',
     required: false,
     default: null,
-    min: 0,
+    min: 0.00000001,
     max: null,
     integer: false,
     units: 'BCH/kB',
@@ -384,7 +384,7 @@ function formToFile(
     maxconnections, peerbloomfilters, onlynet, addnode, maxuploadtarget,
     rpcservertimeout, rpcthreads, rpcworkqueue,
     prune, maxmempool, minrelaytxfee, mempoolexpiry,
-    excessiveblocksize, limitancestorcount, limitdescendantcount,
+    excessiveblocksize,
     dbcache, dbbatchsize, blocknotify, wallet,
   } = input
 
@@ -423,11 +423,15 @@ function formToFile(
     rpcworkqueue: rpcworkqueue ?? undefined,
     prune: prune && prune > 0 ? prune : undefined,
     maxmempool: maxmempool ?? undefined,
-    minrelaytxfee: minrelaytxfee ?? undefined,
+    minrelaytxfee: minrelaytxfee && minrelaytxfee > 0 ? minrelaytxfee : undefined,
     mempoolexpiry: mempoolexpiry ?? undefined,
     excessiveblocksize: excessiveblocksize ?? undefined,
-    limitancestorcount: limitancestorcount ?? undefined,
-    limitdescendantcount: limitdescendantcount ?? undefined,
+    // BCHN v23.1.0 removed limitancestorcount/limitdescendantcount entirely;
+    // writing them makes bitcoind exit with "Invalid configuration value".
+    // shape is .loose(), so a stale conf can still carry them via `...raw` —
+    // force-strip on every write.
+    limitancestorcount: undefined,
+    limitdescendantcount: undefined,
     dbcache: dbcache ?? undefined,
     dbbatchsize: dbbatchsize ?? undefined,
     blocknotify: blocknotify ?? undefined,

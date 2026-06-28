@@ -6,7 +6,7 @@ export const mempoolConfig = sdk.Action.withInput(
   async ({ effects }) => ({
     name: 'Mempool & Block Policy',
     description:
-      'Configure mempool size, relay fees, expiry, excessive block size, and ancestor/descendant limits.',
+      'Configure mempool size, relay fees, expiry, and excessive block size.',
     warning: null,
     allowedStatuses: 'any',
     group: 'Configuration',
@@ -17,8 +17,6 @@ export const mempoolConfig = sdk.Action.withInput(
     minrelaytxfee: true,
     mempoolexpiry: true,
     excessiveblocksize: true,
-    limitancestorcount: true,
-    limitdescendantcount: true,
   }),
   async ({ effects }) => bitcoinConfFile.read().once(),
   async ({ effects, input }) => {
