@@ -34,6 +34,10 @@ jobs:
           fi
         shell: bash
 
+      - name: Initialize packaging workspace
+        run: start-cli s9pk init-workspace 2>/dev/null || true
+        shell: bash
+
       - name: Build service packages
         run: |
           RUST_LOG=debug RUST_BACKTRACE=1 make
