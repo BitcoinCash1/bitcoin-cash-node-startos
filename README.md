@@ -102,7 +102,7 @@ Settings that are always managed by StartOS (not user-editable):
 | `listen`     | `1`           | Always accepting peer connections                 |
 | `rpcbind`    | `0.0.0.0`     | RPC reachable by dependent containers             |
 | `rpcallowip` | `0.0.0.0/0`   | RPC reachable by dependent containers             |
-| `-onion`     | `<torIp>:9050`| StartOS Tor proxy (set at runtime when Tor is up) |
+| `-onion`     | `10.0.3.1:9050`| StartOS Tor SOCKS proxy over the LXC bridge — always set; a dead address is just connection-refused when Tor is absent |
 
 ## Network Access and Interfaces
 

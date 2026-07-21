@@ -18,17 +18,6 @@ export const manifest = setupManifest({
       emulateMissingAs: 'x86_64',
     },
   },
-  alerts: {
-    install:
-      'Bitcoin Cash Node will begin syncing the full BCH blockchain after installation. Initial Block Download may take several hours depending on your hardware and network speed.',
-    update: null,
-    uninstall:
-      'Uninstalling Bitcoin Cash Node will permanently delete all blockchain data, wallet data, and configuration. Ensure you have a backup before proceeding.',
-    restore:
-      'Restoring Bitcoin Cash Node will overwrite your current configuration and wallet data. Blockchain data is not included in backups and must be re-synced.',
-    start: null,
-    stop: null,
-  },
   dependencies: {
     tor: {
       description:

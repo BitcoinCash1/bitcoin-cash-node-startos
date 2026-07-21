@@ -1,3 +1,58 @@
+import { T } from '@start9labs/start-sdk'
+import { sdk } from './sdk'
+
+/**
+ * Bridge address (`10.0.3.1:<assigned external port>`) of a dependency's
+ * binding, as a minimal reactive value. Chain `.const()` in main: the mapped
+ * string only changes when the address itself does, so main restarts exactly
+ * on dependency install/uninstall/port-change and never on dependency
+ * updates. Chain `.once()` in an action context. `fallbackPort` keeps the
+ * value non-null while the dependency is absent — sanctioned only for tor's
+ * allocator-guaranteed SOCKS 9050. Drop-in for the planned SDK
+ * `sdk.host.getBridgeAddress` helper.
+ */
+export function bridgeAddress(
+  effects: T.Effects,
+  opts: {
+    packageId: string
+    hostId: string
+    internalPort: number
+    fallbackPort: number
+  },
+): { const(): Promise<string>; once(): Promise<string> }
+export function bridgeAddress(
+  effects: T.Effects,
+  opts: { packageId: string; hostId: string; internalPort: number },
+): { const(): Promise<string | null>; once(): Promise<string | null> }
+export function bridgeAddress(
+  effects: T.Effects,
+  opts: {
+    packageId: string
+    hostId: string
+    internalPort: number
+    fallbackPort?: number
+  },
+) {
+  const watchable = async () => {
+    const osIp = await sdk.getOsIp(effects)
+    return sdk.host.get(
+      effects,
+      { packageId: opts.packageId, hostId: opts.hostId },
+      (host) => {
+        const port =
+          host?.bindings[opts.internalPort]?.net.assignedPort ??
+          opts.fallbackPort
+        if (port == null) return null
+        return `${osIp}:${port}`
+      },
+    )
+  }
+  return {
+    const: async () => (await watchable()).const(),
+    once: async () => (await watchable()).once(),
+  }
+}
+
 export const rootDir = '/data'
 
 // ── Interface IDs ─────────────────────────────────────────────────────────────
@@ -10,48 +65,55 @@ export const zmqInterfaceId = 'zmq'
 // We override -rpcport / -port on the BCHN CLI so the daemon's network-default
 // ports never clash with our internal ZMQ ports (28332-28335). testnet4's BCHN
 // default p2p/rpc is 28333/28332 — we explicitly remap to 28342/28343 below.
-export const NETWORKS = ['mainnet', 'testnet3', 'testnet4', 'scalenet', 'chipnet', 'regtest'] as const
+export const NETWORKS = [
+  'mainnet',
+  'testnet3',
+  'testnet4',
+  'scalenet',
+  'chipnet',
+  'regtest',
+] as const
 export type Network = (typeof NETWORKS)[number]
 
 export const networkPorts: Record<Network, { rpc: number; peer: number }> = {
-  mainnet:  { rpc: 8332,  peer: 8333  },
+  mainnet: { rpc: 8332, peer: 8333 },
   testnet3: { rpc: 18332, peer: 18333 },
   testnet4: { rpc: 28342, peer: 28343 }, // remapped from BCHN default 28332/28333 to avoid ZMQ collision
   scalenet: { rpc: 38332, peer: 38333 },
-  chipnet:  { rpc: 48332, peer: 48333 },
-  regtest:  { rpc: 18443, peer: 18444 },
+  chipnet: { rpc: 48332, peer: 48333 },
+  regtest: { rpc: 18443, peer: 18444 },
 }
 
 export const networkFlag: Record<Network, string | null> = {
-  mainnet:  null,
+  mainnet: null,
   testnet3: '-testnet',
   testnet4: '-testnet4',
   scalenet: '-scalenet',
-  chipnet:  '-chipnet',
-  regtest:  '-regtest',
+  chipnet: '-chipnet',
+  regtest: '-regtest',
 }
 
 export const rpcPort = networkPorts.mainnet.rpc
 export const peerPort = networkPorts.mainnet.peer
 
 // ── ZMQ — block / tx notifications (28332 / 28333) ───────────────────────────
-export const zmqPort   = 28332
+export const zmqPort = 28332
 export const zmqPortTx = 28333
 
 export const zmqBundle: Record<string, string> = {
-  zmqpubrawblock:  `tcp://0.0.0.0:${zmqPort}`,
+  zmqpubrawblock: `tcp://0.0.0.0:${zmqPort}`,
   zmqpubhashblock: `tcp://0.0.0.0:${zmqPort}`,
-  zmqpubrawtx:     `tcp://0.0.0.0:${zmqPortTx}`,
-  zmqpubhashtx:    `tcp://0.0.0.0:${zmqPortTx}`,
+  zmqpubrawtx: `tcp://0.0.0.0:${zmqPortTx}`,
+  zmqpubhashtx: `tcp://0.0.0.0:${zmqPortTx}`,
 }
 
 // ── ZMQ — DSP notifications (28334 / 28335) — always on ──────────────────────
 export const zmqPortDspHash = 28334
-export const zmqPortDspRaw  = 28335
+export const zmqPortDspRaw = 28335
 
 export const dspZmqBundle: Record<string, string> = {
   zmqpubhashds: `tcp://0.0.0.0:${zmqPortDspHash}`,
-  zmqpubrawds:  `tcp://0.0.0.0:${zmqPortDspRaw}`,
+  zmqpubrawds: `tcp://0.0.0.0:${zmqPortDspRaw}`,
 }
 
 // ── RPC response types ────────────────────────────────────────────────────────

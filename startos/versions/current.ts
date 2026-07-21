@@ -1,12 +1,13 @@
 import { IMPOSSIBLE, VersionInfo } from '@start9labs/start-sdk'
 
 export const current = VersionInfo.of({
-  version: '29.0.0:6',
+  version: '29.0.0:7',
   releaseNotes: {
-    en_US:
-      'Show active network (Mainnet, Chipnet, etc.) in sync and peer health check messages. ' +
-      'Switching network via the Network action now automatically restarts the node. ' +
-      'Health checks updated to handle regtest correctly (verificationprogress at 100% no longer falsely reports "Syncing").',
+    en_US: 'Internal updates (start-sdk 2.0.x)',
+    es_ES: 'Actualizaciones internas (start-sdk 2.0.x)',
+    de_DE: 'Interne Aktualisierungen (start-sdk 2.0.x)',
+    pl_PL: 'Aktualizacje wewnętrzne (start-sdk 2.0.x)',
+    fr_FR: 'Mises à jour internes (start-sdk 2.0.x)',
   },
   migrations: {
     up: async ({ effects }) => {},
