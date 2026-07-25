@@ -54,10 +54,10 @@ The pre-built upstream BCHN image ships `bitcoind` and `bitcoin-cli`, plus ZMQ s
 
 StartOS-specific files on the `main` volume:
 
-| File           | Purpose                                                                    |
-| -------------- | -------------------------------------------------------------------------- |
-| `bitcoin.conf` | INI config written from the configuration actions                         |
-| `store.json`   | Persistent StartOS state (RPC credentials, network, reindex/sync flags)    |
+| File           | Purpose                                                                 |
+| -------------- | ----------------------------------------------------------------------- |
+| `bitcoin.conf` | INI config written from the configuration actions                       |
+| `store.json`   | Persistent StartOS state (RPC credentials, network, reindex/sync flags) |
 
 Blockchain data (`blocks/`, `chainstate/`, `indexes/`) resides on the `main` volume alongside `bitcoin.conf`, `peers.dat`, and wallet data.
 
@@ -72,10 +72,10 @@ Blockchain data (`blocks/`, `chainstate/`, `indexes/`) resides on the `main` vol
 
 Out of the box, BCHN connects to the Bitcoin Cash network over clearnet with no user configuration required. When the **Tor** service is installed, outbound peer connections are additionally routed over Tor.
 
-| Transport     | Default                                    | Inbound                                       | How to change                                       |
-| ------------- | ------------------------------------------ | --------------------------------------------- | --------------------------------------------------- |
-| **IPv4/IPv6** | Enabled (clearnet peer discovery)          | No (no `externalip` advertised)               | Publish an IP address on the Peer interface          |
-| **Tor**       | Outbound via StartOS Tor proxy (`-onion`)  | No (no onion address advertised)              | Add an onion address on the Peer interface           |
+| Transport     | Default                                   | Inbound                          | How to change                               |
+| ------------- | ----------------------------------------- | -------------------------------- | ------------------------------------------- |
+| **IPv4/IPv6** | Enabled (clearnet peer discovery)         | No (no `externalip` advertised)  | Publish an IP address on the Peer interface |
+| **Tor**       | Outbound via StartOS Tor proxy (`-onion`) | No (no onion address advertised) | Add an onion address on the Peer interface  |
 
 Set **RPC & Peers Settings → Allowed Networks** to **Tor (.onion)** only to run a fully Tor-only node — BCHN is then started with `-proxy`, `-dnsseed=0`, and `-dns=0` so no clearnet lookups leak. In that mode you must add at least one `.onion` peer under **Add Peers**.
 
@@ -85,24 +85,24 @@ BCHN's automatic onion-listen feature (`-listenonion`) requires a TCP Tor contro
 
 BCHN is configured through **StartOS actions** that write to `bitcoin.conf` (INI format) on the `main` volume. Four actions in the **Configuration** group cover all user-facing settings:
 
-| Action                    | Settings                                                                                              |
-| ------------------------- | ----------------------------------------------------------------------------------------------------- |
-| **Network**               | Network selection (mainnet / testnet3 / testnet4 / scalenet / chipnet / regtest)                      |
-| **Node Settings**         | txindex, prune, ZeroMQ, mempool persistence, dbcache, dbbatchsize, blocknotify, wallet files          |
-| **RPC & Peers Settings**  | RPC timeout/threads/workqueue, max connections, max upload target, bloom filters, allowed networks, peers |
-| **Mempool & Block Policy**| max mempool, min relay fee, mempool expiry, excessive block size, ancestor/descendant limits          |
+| Action                     | Settings                                                                                                  |
+| -------------------------- | --------------------------------------------------------------------------------------------------------- |
+| **Network**                | Network selection (mainnet / testnet3 / testnet4 / scalenet / chipnet / regtest)                          |
+| **Node Settings**          | txindex, prune, ZeroMQ, mempool persistence, dbcache, dbbatchsize, blocknotify, wallet files              |
+| **RPC & Peers Settings**   | RPC timeout/threads/workqueue, max connections, max upload target, bloom filters, allowed networks, peers |
+| **Mempool & Block Policy** | max mempool, min relay fee, mempool expiry, excessive block size, ancestor/descendant limits              |
 
 Selecting a network switches the data directory and the RPC/P2P port set automatically. Enabling pruning forces `txindex` off (the two are incompatible). Double Spend Proof (DSP) relay is always forced on.
 
 Settings that are always managed by StartOS (not user-editable):
 
-| Setting      | Value         | Reason                                            |
-| ------------ | ------------- | ------------------------------------------------- |
-| `server`     | `1`           | RPC server always on                              |
-| `listen`     | `1`           | Always accepting peer connections                 |
-| `rpcbind`    | `0.0.0.0`     | RPC reachable by dependent containers             |
-| `rpcallowip` | `0.0.0.0/0`   | RPC reachable by dependent containers             |
-| `-onion`     | `10.0.3.1:9050`| StartOS Tor SOCKS proxy over the LXC bridge — always set; a dead address is just connection-refused when Tor is absent |
+| Setting      | Value           | Reason                                                                                                                 |
+| ------------ | --------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `server`     | `1`             | RPC server always on                                                                                                   |
+| `listen`     | `1`             | Always accepting peer connections                                                                                      |
+| `rpcbind`    | `0.0.0.0`       | RPC reachable by dependent containers                                                                                  |
+| `rpcallowip` | `0.0.0.0/0`     | RPC reachable by dependent containers                                                                                  |
+| `-onion`     | `10.0.3.1:9050` | StartOS Tor SOCKS proxy over the LXC bridge — always set; a dead address is just connection-refused when Tor is absent |
 
 ## Network Access and Interfaces
 
@@ -123,42 +123,42 @@ RPC/P2P ports per network: testnet3 `18332/18333`, testnet4 `28342/28343`, scale
 
 ### Configuration
 
-| Action                     | Purpose                                       | Availability |
-| -------------------------- | --------------------------------------------- | ------------ |
-| **Network**                | Select the Bitcoin Cash network               | Any          |
-| **Node Settings**          | Indexes, pruning, ZMQ, performance, advanced  | Any          |
-| **RPC & Peers Settings**   | RPC tuning, peer connections, network limits  | Any          |
-| **Mempool & Block Policy** | Mempool size, relay fees, block policy        | Any          |
+| Action                     | Purpose                                      | Availability |
+| -------------------------- | -------------------------------------------- | ------------ |
+| **Network**                | Select the Bitcoin Cash network              | Any          |
+| **Node Settings**          | Indexes, pruning, ZMQ, performance, advanced | Any          |
+| **RPC & Peers Settings**   | RPC tuning, peer connections, network limits | Any          |
+| **Mempool & Block Policy** | Mempool size, relay fees, block policy       | Any          |
 
 ### Info
 
-| Action        | Purpose                                                           | Availability |
-| ------------- | ----------------------------------------------------------------- | ------------ |
-| **Node Info** | Version, network, connections, and sync status from live RPC      | Running only |
+| Action        | Purpose                                                      | Availability |
+| ------------- | ------------------------------------------------------------ | ------------ |
+| **Node Info** | Version, network, connections, and sync status from live RPC | Running only |
 
 ### Credentials
 
-| Action                       | Purpose                                                       | Availability |
-| ---------------------------- | ------------------------------------------------------------- | ------------ |
-| **View RPC Credentials**     | Show username, password, and RPC port for a selected credential | Any        |
-| **Generate RPC Credentials** | Create a new `rpcauth` entry for an external service          | Any          |
-| **Delete RPC Users**         | Remove existing `rpcauth` entries                             | Any          |
+| Action                       | Purpose                                                         | Availability |
+| ---------------------------- | --------------------------------------------------------------- | ------------ |
+| **View RPC Credentials**     | Show username, password, and RPC port for a selected credential | Any          |
+| **Generate RPC Credentials** | Create a new `rpcauth` entry for an external service            | Any          |
+| **Delete RPC Users**         | Remove existing `rpcauth` entries                               | Any          |
 
 ### Maintenance
 
-| Action                       | Purpose                                                         | Availability |
-| ---------------------------- | --------------------------------------------------------------- | ------------ |
-| **Reindex Blockchain**       | Re-verify every block from genesis (rebuilds index + chainstate)| Any          |
-| **Reindex Chainstate**       | Rebuild the UTXO chainstate from existing block files           | Any          |
-| **Delete Peer List**         | Delete a corrupted `peers.dat`                                  | Stopped only |
-| **Delete Transaction Index** | Delete a corrupted txindex                                      | Stopped only |
-| **Delete Test Network Data** | Free disk space by deleting block data for selected test networks (never touches mainnet; refuses the active network) | Any |
+| Action                       | Purpose                                                                                                               | Availability |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------ |
+| **Reindex Blockchain**       | Re-verify every block from genesis (rebuilds index + chainstate)                                                      | Any          |
+| **Reindex Chainstate**       | Rebuild the UTXO chainstate from existing block files                                                                 | Any          |
+| **Delete Peer List**         | Delete a corrupted `peers.dat`                                                                                        | Stopped only |
+| **Delete Transaction Index** | Delete a corrupted txindex                                                                                            | Stopped only |
+| **Delete Test Network Data** | Free disk space by deleting block data for selected test networks (never touches mainnet; refuses the active network) | Any          |
 
 ### Hidden (Dependent Service Automation)
 
-| Action           | Purpose                                                          | Availability |
-| ---------------- | ---------------------------------------------------------------- | ------------ |
-| **Auto-Configure** | Prefill `bitcoin.conf` with the settings a dependent service needs | Any        |
+| Action             | Purpose                                                            | Availability |
+| ------------------ | ------------------------------------------------------------------ | ------------ |
+| **Auto-Configure** | Prefill `bitcoin.conf` with the settings a dependent service needs | Any          |
 
 ## Backups and Restore
 
@@ -172,22 +172,22 @@ RPC/P2P ports per network: testnet3 `18332/18333`, testnet4 `28342/28343`, scale
 
 ## Health Checks
 
-| Check                | Method                                  | Messages                                                                          |
-| -------------------- | --------------------------------------- | --------------------------------------------------------------------------------- |
-| **RPC**              | `bitcoin-cli getrpcinfo` (daemon ready) | "BCHN RPC Interface is ready"                                                      |
-| **Blockchain Sync**  | `bitcoin-cli getblockchaininfo`         | Percentage during IBD; "Synced — block N" when complete                           |
-| **Peer Connections** | `bitcoin-cli getpeerinfo`               | Connected peer count with inbound/outbound split; warns when fewer than 3 peers   |
+| Check                | Method                                  | Messages                                                                             |
+| -------------------- | --------------------------------------- | ------------------------------------------------------------------------------------ |
+| **RPC**              | `bitcoin-cli getrpcinfo` (daemon ready) | "BCHN RPC Interface is ready"                                                        |
+| **Blockchain Sync**  | `bitcoin-cli getblockchaininfo`         | Percentage during IBD; "Synced — block N" when complete                              |
+| **Peer Connections** | `bitcoin-cli getpeerinfo`               | Connected peer count with inbound/outbound split; warns when fewer than 3 peers      |
 | **Tor**              | Tor install/running + onion address     | "Inbound and outbound" when an onion address is published; otherwise "Outbound only" |
-| **Clearnet**         | Published IP address check              | "Inbound and outbound" when an IP is published; otherwise "Outbound only"          |
+| **Clearnet**         | Published IP address check              | "Inbound and outbound" when an IP is published; otherwise "Outbound only"            |
 
 ## Dependencies
 
 ### Tor (optional, conditional)
 
-| Property           | Value                                                              |
-| ------------------ | ----------------------------------------------------------------- |
-| Version constraint | `>= 0.4.9.5`                                                      |
-| Required state     | Running                                                           |
+| Property           | Value                                                            |
+| ------------------ | ---------------------------------------------------------------- |
+| Version constraint | `>= 0.4.9.5`                                                     |
+| Required state     | Running                                                          |
 | Health checks      | None                                                             |
 | Mounted volumes    | None                                                             |
 | Purpose            | Tor SOCKS proxy for outbound connections and onion advertisement |
@@ -198,17 +198,17 @@ The dependency becomes **required** only when `externalip` contains a `.onion` a
 
 Values seeded into `bitcoin.conf` / `store.json` on install:
 
-| Setting          | Our Default                       | Reason                                                |
-| ---------------- | --------------------------------- | ----------------------------------------------------- |
-| `txindex`        | `1` (on)                          | Required by Fulcrum BCH and BCH Explorer              |
-| ZMQ block/tx     | `tcp://0.0.0.0:28332` / `:28333`  | Required by indexers and explorers                    |
-| ZMQ DSP          | `tcp://0.0.0.0:28334` / `:28335`  | Double Spend Proof streams (always on)                |
-| `doublespendproof` | `1` (on)                        | DSP relay always enabled                              |
-| `persistmempool` | `1` (on)                          | Reload mempool across restarts                        |
-| `maxconnections` | `125`                             | Upstream default, written explicitly                  |
-| `dbcache`        | 25% of system RAM (max 5120 MB)   | Faster IBD on machines with more RAM                  |
-| `rpcthreads`     | `4`                               | RPC concurrency for dependent services                |
-| `rpcworkqueue`   | `64`                              | RPC queue depth for dependent services                |
+| Setting            | Our Default                      | Reason                                   |
+| ------------------ | -------------------------------- | ---------------------------------------- |
+| `txindex`          | `1` (on)                         | Required by Fulcrum BCH and BCH Explorer |
+| ZMQ block/tx       | `tcp://0.0.0.0:28332` / `:28333` | Required by indexers and explorers       |
+| ZMQ DSP            | `tcp://0.0.0.0:28334` / `:28335` | Double Spend Proof streams (always on)   |
+| `doublespendproof` | `1` (on)                         | DSP relay always enabled                 |
+| `persistmempool`   | `1` (on)                         | Reload mempool across restarts           |
+| `maxconnections`   | `125`                            | Upstream default, written explicitly     |
+| `dbcache`          | 25% of system RAM (max 5120 MB)  | Faster IBD on machines with more RAM     |
+| `rpcthreads`       | `4`                              | RPC concurrency for dependent services   |
+| `rpcworkqueue`     | `64`                             | RPC queue depth for dependent services   |
 
 ## Limitations and Differences
 
