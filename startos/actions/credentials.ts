@@ -18,7 +18,6 @@ export const viewCredentials = sdk.Action.withInput(
   }),
 
   async ({ effects }) => {
-    const store = await storeJson.read().once()
     const conf = await bitcoinConfFile.read().once()
     const existingAuth: string[] = (
       (conf?.raw?.rpcauth as unknown as (string | undefined)[] | undefined) ??
