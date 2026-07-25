@@ -186,7 +186,7 @@ RPC/P2P ports per network: testnet3 `18332/18333`, testnet4 `28342/28343`, scale
 
 | Property           | Value                                                            |
 | ------------------ | ---------------------------------------------------------------- |
-| Version constraint | `>= 0.4.9.5`                                                     |
+| Version constraint | Declared in `startos/dependencies.ts`                            |
 | Required state     | Running                                                          |
 | Health checks      | None                                                             |
 | Mounted volumes    | None                                                             |
