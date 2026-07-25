@@ -15,7 +15,10 @@ const spec = InputSpec.of({
   }),
 })
 
-function generateRpcAuth(username: string): { rpcauth: string; password: string } {
+function generateRpcAuth(username: string): {
+  rpcauth: string
+  password: string
+} {
   const password = randomBytes(24).toString('base64url')
   const salt = randomBytes(16).toString('hex')
   const hmac = createHmac('sha256', salt).update(password).digest('hex')
@@ -34,17 +37,23 @@ export const generateRpcUser = sdk.Action.withInput(
     visibility: 'enabled' as const,
   }),
   spec,
-  async ({ effects: _effects }) => ({ username: undefined as string | undefined }),
+  async ({ effects: _effects }) => ({
+    username: undefined as string | undefined,
+  }),
   async ({ effects, input }) => {
     const { username } = input
     const { rpcauth, password } = generateRpcAuth(username)
 
     // Append the new rpcauth entry to bitcoin.conf
     const conf = await bitcoinConfFile.read().once()
-    const existingAuth: string[] = ((conf?.raw?.rpcauth as unknown as (string | undefined)[] | undefined) ?? [])
-      .filter((v): v is string => typeof v === 'string')
+    const existingAuth: string[] = (
+      (conf?.raw?.rpcauth as unknown as (string | undefined)[] | undefined) ??
+      []
+    ).filter((v): v is string => typeof v === 'string')
     // Remove any existing entry for the same username, then add the new one
-    const filtered = existingAuth.filter((entry) => !entry.startsWith(`${username}:`))
+    const filtered = existingAuth.filter(
+      (entry) => !entry.startsWith(`${username}:`),
+    )
     await bitcoinConfFile.merge(effects, {
       raw: { ...conf?.raw, rpcauth: [...filtered, rpcauth] },
     } as any)

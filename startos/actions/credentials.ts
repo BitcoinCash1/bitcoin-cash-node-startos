@@ -21,7 +21,8 @@ export const viewCredentials = sdk.Action.withInput(
     const store = await storeJson.read().once()
     const conf = await bitcoinConfFile.read().once()
     const existingAuth: string[] = (
-      (conf?.raw?.rpcauth as unknown as (string | undefined)[] | undefined) ?? []
+      (conf?.raw?.rpcauth as unknown as (string | undefined)[] | undefined) ??
+      []
     ).filter((v): v is string => typeof v === 'string')
 
     const values: Record<string, string> = { Default: 'Default' }

@@ -90,7 +90,11 @@ function stringifyPrimitives(a: unknown): unknown {
 
 const { InputSpec, Value, List } = sdk
 
-const ONLYNET_VALUES = { ipv4: 'IPv4', ipv6: 'IPv6', onion: 'Tor (.onion)' } as const
+const ONLYNET_VALUES = {
+  ipv4: 'IPv4',
+  ipv6: 'IPv6',
+  onion: 'Tor (.onion)',
+} as const
 type OnlynetKey = keyof typeof ONLYNET_VALUES
 const ALL_ONLYNETS = Object.keys(ONLYNET_VALUES) as OnlynetKey[]
 
@@ -141,7 +145,9 @@ export const fullConfigSpec = InputSpec.of({
     max: 16384,
     integer: true,
     units: 'MB',
-    placeholder: String(Math.min(Math.floor((totalmem() * 0.25) / (1024 * 1024)), 5120)),
+    placeholder: String(
+      Math.min(Math.floor((totalmem() * 0.25) / (1024 * 1024)), 5120),
+    ),
   }),
   dbbatchsize: Value.number({
     name: 'Database Batch Size',
@@ -282,7 +288,8 @@ export const fullConfigSpec = InputSpec.of({
   // ── Block Policy ──────────────────────────────────────────────────────────
   excessiveblocksize: Value.number({
     name: 'Excessive Block Size',
-    description: 'Max accepted block size in bytes. BCHN default: 32000000 (32 MB).',
+    description:
+      'Max accepted block size in bytes. BCHN default: 32000000 (32 MB).',
     required: false,
     default: null,
     min: 1000000,
@@ -346,31 +353,67 @@ function fileToForm(
   input: z.infer<typeof shape>,
 ): T.DeepPartial<typeof fullConfigSpec._TYPE> {
   const {
-    zmqpubhashblock, zmqpubhashtx, zmqpubrawblock, zmqpubrawtx,
-    txindex, persistmempool,
-    maxconnections, peerbloomfilters, onlynet, addnode, maxuploadtarget,
-    rpcservertimeout, rpcthreads, rpcworkqueue,
-    prune, maxmempool, minrelaytxfee, mempoolexpiry,
-    excessiveblocksize, limitancestorcount, limitdescendantcount,
-    dbcache, dbbatchsize, blocknotify, wallet,
+    zmqpubhashblock,
+    zmqpubhashtx,
+    zmqpubrawblock,
+    zmqpubrawtx,
+    txindex,
+    persistmempool,
+    maxconnections,
+    peerbloomfilters,
+    onlynet,
+    addnode,
+    maxuploadtarget,
+    rpcservertimeout,
+    rpcthreads,
+    rpcworkqueue,
+    prune,
+    maxmempool,
+    minrelaytxfee,
+    mempoolexpiry,
+    excessiveblocksize,
+    limitancestorcount,
+    limitdescendantcount,
+    dbcache,
+    dbbatchsize,
+    blocknotify,
+    wallet,
   } = input
 
   // When no onlynet is written in conf, all networks are allowed — show all checked
   const onlynetFromConf = onlynet?.filter((v): v is string => !!v) ?? []
-  const onlynetForm = onlynetFromConf.length === 0 ? ALL_ONLYNETS : onlynetFromConf as OnlynetKey[]
+  const onlynetForm =
+    onlynetFromConf.length === 0
+      ? ALL_ONLYNETS
+      : (onlynetFromConf as OnlynetKey[])
 
   return {
     raw: input ?? {},
-    zmqEnabled: !!(zmqpubhashblock && zmqpubhashtx && zmqpubrawblock && zmqpubrawtx),
-    txindex, persistmempool,
-    maxconnections, peerbloomfilters,
+    zmqEnabled: !!(
+      zmqpubhashblock &&
+      zmqpubhashtx &&
+      zmqpubrawblock &&
+      zmqpubrawtx
+    ),
+    txindex,
+    persistmempool,
+    maxconnections,
+    peerbloomfilters,
     onlynet: onlynetForm,
     addnode: addnode?.filter((v): v is string => !!v) ?? [],
     maxuploadtarget,
-    rpcservertimeout, rpcthreads, rpcworkqueue,
-    prune, maxmempool, minrelaytxfee, mempoolexpiry,
-    excessiveblocksize, limitancestorcount, limitdescendantcount,
-    dbcache, dbbatchsize,
+    rpcservertimeout,
+    rpcthreads,
+    rpcworkqueue,
+    prune,
+    maxmempool,
+    minrelaytxfee,
+    mempoolexpiry,
+    excessiveblocksize,
+    limitancestorcount,
+    limitdescendantcount,
+    dbcache,
+    dbbatchsize,
     blocknotify: blocknotify ?? undefined,
     wallet: wallet?.filter((v): v is string => !!v) ?? [],
   }
@@ -380,19 +423,37 @@ function formToFile(
   input: T.DeepPartial<typeof fullConfigSpec._TYPE>,
 ): z.infer<typeof shape> {
   const {
-    raw, zmqEnabled, txindex, persistmempool,
-    maxconnections, peerbloomfilters, onlynet, addnode, maxuploadtarget,
-    rpcservertimeout, rpcthreads, rpcworkqueue,
-    prune, maxmempool, minrelaytxfee, mempoolexpiry,
-    excessiveblocksize, limitancestorcount, limitdescendantcount,
-    dbcache, dbbatchsize, blocknotify, wallet,
+    raw,
+    zmqEnabled,
+    txindex,
+    persistmempool,
+    maxconnections,
+    peerbloomfilters,
+    onlynet,
+    addnode,
+    maxuploadtarget,
+    rpcservertimeout,
+    rpcthreads,
+    rpcworkqueue,
+    prune,
+    maxmempool,
+    minrelaytxfee,
+    mempoolexpiry,
+    excessiveblocksize,
+    limitancestorcount,
+    limitdescendantcount,
+    dbcache,
+    dbbatchsize,
+    blocknotify,
+    wallet,
   } = input
 
   const effectiveTxindex = prune && prune > 0 ? false : (txindex ?? false)
   // If all networks selected (or none specified), don't write onlynet (means allow all)
   const onlynetList = (onlynet as string[] | undefined)?.filter(Boolean) ?? []
   const allSelected = ALL_ONLYNETS.every((n) => onlynetList.includes(n))
-  const writeOnlynet = onlynetList.length > 0 && !allSelected ? onlynetList : undefined
+  const writeOnlynet =
+    onlynetList.length > 0 && !allSelected ? onlynetList : undefined
 
   return {
     ...raw,
@@ -403,20 +464,29 @@ function formToFile(
     rpcuser: raw?.rpcuser,
     rpcpassword: raw?.rpcpassword,
     rpcauth: raw?.rpcauth?.filter((v): v is string => typeof v === 'string'),
-    externalip: raw?.externalip?.filter((v): v is string => typeof v === 'string'),
+    externalip: raw?.externalip?.filter(
+      (v): v is string => typeof v === 'string',
+    ),
     txindex: effectiveTxindex,
     persistmempool: persistmempool ?? true,
     // ZMQ block/tx — conditional
     ...(zmqEnabled
       ? zmqBundle
-      : { zmqpubrawblock: undefined, zmqpubhashblock: undefined,
-          zmqpubrawtx: undefined, zmqpubhashtx: undefined }),
+      : {
+          zmqpubrawblock: undefined,
+          zmqpubhashblock: undefined,
+          zmqpubrawtx: undefined,
+          zmqpubhashtx: undefined,
+        }),
     // ZMQ DSP — ALWAYS ON
     ...dspZmqBundle,
     maxconnections: maxconnections ?? undefined,
     peerbloomfilters: peerbloomfilters ?? undefined,
     onlynet: writeOnlynet,
-    addnode: addnode && (addnode as string[]).length > 0 ? (addnode as string[]).filter(Boolean) : undefined,
+    addnode:
+      addnode && (addnode as string[]).length > 0
+        ? (addnode as string[]).filter(Boolean)
+        : undefined,
     maxuploadtarget: maxuploadtarget ?? undefined,
     rpcservertimeout: rpcservertimeout ?? undefined,
     rpcthreads: rpcthreads ?? undefined,
@@ -431,7 +501,10 @@ function formToFile(
     dbcache: dbcache ?? undefined,
     dbbatchsize: dbbatchsize ?? undefined,
     blocknotify: blocknotify ?? undefined,
-    wallet: wallet && (wallet as string[]).length > 0 ? (wallet as string[]).filter(Boolean) : undefined,
+    wallet:
+      wallet && (wallet as string[]).length > 0
+        ? (wallet as string[]).filter(Boolean)
+        : undefined,
     // DSP relay — always forced on
     doublespendproof: true,
   }
@@ -443,6 +516,7 @@ export const bitcoinConfFile = FileHelper.ini(
   { bracketedArray: false },
   {
     onRead: (a) => fileToForm(shape.parse(a)),
-    onWrite: (a) => stringifyPrimitives(formToFile(a)) as Record<string, unknown>,
+    onWrite: (a) =>
+      stringifyPrimitives(formToFile(a)) as Record<string, unknown>,
   },
 )

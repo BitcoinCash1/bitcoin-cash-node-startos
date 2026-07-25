@@ -5,7 +5,8 @@ export const peersConfig = sdk.Action.withInput(
   'peers-config',
   async ({ effects: _effects }) => ({
     name: 'RPC & Peers Settings',
-    description: 'Configure RPC server tuning, peer connections, network restrictions, and bandwidth limits.',
+    description:
+      'Configure RPC server tuning, peer connections, network restrictions, and bandwidth limits.',
     warning: null,
     allowedStatuses: 'any' as const,
     group: 'Configuration',

@@ -1,7 +1,6 @@
 import { socksHostId, socksPort } from 'tor-startos/startos/utils'
 import { sdk } from './sdk'
 import {
-  bridgeAddress,
   rootDir,
   networkPorts,
   networkFlag,
@@ -49,12 +48,14 @@ export const main = sdk.setupMain(async ({ effects }) => {
   // install/update/uninstall, so this .const() never restarts BCHN unless tor
   // lands on a different port (then one healing restart). A dead bridge
   // address is just connection-refused, so -onion is always safe to pass.
-  const torSocks = await bridgeAddress(effects, {
-    packageId: 'tor',
-    hostId: socksHostId,
-    internalPort: socksPort,
-    fallbackPort: socksPort,
-  }).const()
+  const torSocks = await sdk.host
+    .getBridgeAddress(effects, {
+      packageId: 'tor',
+      hostId: socksHostId,
+      internalPort: socksPort,
+      fallbackPort: socksPort,
+    })
+    .const()
 
   // Track Tor install/run state dynamically for the health check (no restart)
   let torInstalled = false

@@ -1,7 +1,13 @@
 import { sdk } from './sdk'
 import {
-  rpcInterfaceId, peerInterfaceId, zmqInterfaceId,
-  networkPorts, zmqPort, zmqPortTx, zmqPortDspHash, zmqPortDspRaw,
+  rpcInterfaceId,
+  peerInterfaceId,
+  zmqInterfaceId,
+  networkPorts,
+  zmqPort,
+  zmqPortTx,
+  zmqPortDspHash,
+  zmqPortDspRaw,
   Network,
 } from './utils'
 import { bitcoinConfFile } from './fileModels/bitcoin.conf'
@@ -46,7 +52,8 @@ export const setInterfaces = sdk.setupInterfaces(async ({ effects }) => {
   const peer = sdk.createInterface(effects, {
     name: 'Peer Interface',
     id: peerInterfaceId,
-    description: 'Listens for incoming connections from peers on the bitcoin cash network',
+    description:
+      'Listens for incoming connections from peers on the bitcoin cash network',
     type: 'p2p',
     masked: false,
     schemeOverride: { ssl: null, noSsl: null },
@@ -68,7 +75,8 @@ export const setInterfaces = sdk.setupInterfaces(async ({ effects }) => {
     const zmq = sdk.createInterface(effects, {
       name: 'ZeroMQ Interface',
       id: zmqInterfaceId,
-      description: 'Streams real-time block and transaction notifications (hashes and raw data)',
+      description:
+        'Streams real-time block and transaction notifications (hashes and raw data)',
       type: 'api',
       masked: false,
       schemeOverride: null,

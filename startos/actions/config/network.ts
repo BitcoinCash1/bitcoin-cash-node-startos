@@ -11,12 +11,12 @@ const networkSpec = InputSpec.of({
     warning:
       'Switching networks requires a full restart. The node will sync from scratch on the new network. Your mainnet data is preserved separately on disk.',
     values: {
-      mainnet:  'Mainnet',
+      mainnet: 'Mainnet',
       testnet3: 'Testnet3 (legacy test network)',
       testnet4: 'Testnet4 (light-weight test network)',
       scalenet: 'Scalenet (high-throughput test network)',
-      chipnet:  'Chipnet (upgrade / CHIP staging)',
-      regtest:  'Regtest (local testing only)',
+      chipnet: 'Chipnet (upgrade / CHIP staging)',
+      regtest: 'Regtest (local testing only)',
     },
     default: 'mainnet',
   }),

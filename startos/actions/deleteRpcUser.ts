@@ -18,7 +18,8 @@ export const deleteRpcUser = sdk.Action.withInput(
   async ({ effects: _effects }) => {
     const conf = await bitcoinConfFile.read().once()
     const existingAuth: string[] = (
-      (conf?.raw?.rpcauth as unknown as (string | undefined)[] | undefined) ?? []
+      (conf?.raw?.rpcauth as unknown as (string | undefined)[] | undefined) ??
+      []
     ).filter((v): v is string => typeof v === 'string')
 
     // Parse out usernames from "username:salt$hmac" format
@@ -53,7 +54,8 @@ export const deleteRpcUser = sdk.Action.withInput(
     const toDelete = new Set(usernames as string[])
     const conf = await bitcoinConfFile.read().once()
     const existingAuth: string[] = (
-      (conf?.raw?.rpcauth as unknown as (string | undefined)[] | undefined) ?? []
+      (conf?.raw?.rpcauth as unknown as (string | undefined)[] | undefined) ??
+      []
     ).filter((v): v is string => typeof v === 'string')
 
     const filtered = existingAuth.filter(
@@ -61,7 +63,10 @@ export const deleteRpcUser = sdk.Action.withInput(
     )
 
     await bitcoinConfFile.merge(effects, {
-      raw: { ...conf?.raw, rpcauth: filtered.length > 0 ? filtered : undefined },
+      raw: {
+        ...conf?.raw,
+        rpcauth: filtered.length > 0 ? filtered : undefined,
+      },
     } as any)
 
     const deleted = [...toDelete].join(', ')

@@ -19,8 +19,8 @@ const inputSpec = InputSpec.of({
       testnet3: 'Testnet3',
       testnet4: 'Testnet4',
       scalenet: 'Scalenet',
-      chipnet:  'Chipnet',
-      regtest:  'Regtest',
+      chipnet: 'Chipnet',
+      regtest: 'Regtest',
     },
   }),
 })
@@ -29,8 +29,8 @@ const testNetSubdirs: Record<string, string> = {
   testnet3: 'testnet3',
   testnet4: 'testnet4',
   scalenet: 'scalenet',
-  chipnet:  'chipnet',
-  regtest:  'regtest',
+  chipnet: 'chipnet',
+  regtest: 'regtest',
 }
 
 export const deleteTestNetworkData = sdk.Action.withInput(
@@ -49,9 +49,9 @@ export const deleteTestNetworkData = sdk.Action.withInput(
   async ({ effects: _effects }) => {
     const store = await storeJson.read().once()
     const active: Network = store?.network ?? 'mainnet'
-    const defaults = (['testnet3', 'testnet4', 'scalenet', 'chipnet', 'regtest'] as const).filter(
-      (n) => n !== active,
-    )
+    const defaults = (
+      ['testnet3', 'testnet4', 'scalenet', 'chipnet', 'regtest'] as const
+    ).filter((n) => n !== active)
     return { networks: defaults }
   },
   async ({ effects, input }) => {
