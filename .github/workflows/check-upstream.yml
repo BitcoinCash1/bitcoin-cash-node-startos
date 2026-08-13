@@ -1,0 +1,54 @@
+name: Check Upstream
+
+on:
+  schedule:
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check for a new upstream BCHN release
+        run: |
+          set -euo pipefail
+          # Releases, not tags — GitLab tags can include extras; releases
+          # are the versions Docker Hub mainnet/bitcoin-cash-node tracks.
+          LATEST=$(curl -fsS \
+            'https://gitlab.com/api/v4/projects/bitcoin-cash-node%2Fbitcoin-cash-node/releases?per_page=1' \
+            | python3 -c "import sys,json; r=json.load(sys.stdin); print(r[0]['tag_name'] if r else '')")
+          if [ -z "$LATEST" ]; then
+            echo "Could not fetch upstream version"
+            exit 0
+          fi
+
+          CURRENT=$(python3 - <<'PY'
+          import re
+          from pathlib import Path
+          idx = Path("startos/versions/index.ts").read_text()
+          var = re.search(r"current:\s*(\w+)", idx).group(1)
+          imp = re.search(rf"import \{{\s*{re.escape(var)}\s*\}} from '([^']+)'", idx)
+          ver = re.search(
+              r"version:\s*'([^']+)'",
+              Path("startos/versions/" + imp.group(1).lstrip("./") + ".ts").read_text(),
+          ).group(1)
+          print("v" + ver.split(":", 1)[0])
+          PY
+          )
+
+          if [ "$LATEST" = "$CURRENT" ]; then
+            echo "Already at $LATEST — no update"
+            exit 0
+          fi
+
+          echo "Updating $CURRENT -> $LATEST"
+          bash scripts/auto-bump.sh "$LATEST"
+        shell: bash
