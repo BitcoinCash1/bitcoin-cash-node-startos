@@ -114,7 +114,7 @@ Outbound `.onion` peer traffic is routed automatically when the **Tor** service 
 
 ## May 2026 Network Upgrade
 
-BCHN v29.0.0 implements the **May 15, 2026 network upgrade**, which adds four consensus-level improvements:
+BCHN v29.1.0 implements the **May 15, 2026 network upgrade**, which adds four consensus-level improvements:
 
 - **P2S32** — Pay-to-Script-Hash with 32-byte hashes
 - **Native Loops** — Looping opcodes in scripts

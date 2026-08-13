@@ -106,7 +106,7 @@ forwarding your `.onion:8333` to the node. Then add your `.onion` address under
 
 ## May 2026 network upgrade
 
-BCHN v29.0.0 implements the **May 15, 2026 network upgrade**:
+BCHN v29.1.0 implements the **May 15, 2026 network upgrade**:
 
 - **P2S32** — Pay-to-Script-Hash with 32-byte hashes.
 - **Native Loops** — looping opcodes in scripts.
