@@ -1,9 +1,11 @@
 import { IMPOSSIBLE, VersionInfo } from '@start9labs/start-sdk'
 
 export const current = VersionInfo.of({
-  version: '29.0.0:11',
+  version: '29.1.0:0',
   releaseNotes: {
-    en_US: `Switching networks now moves the ports with it.
+    en_US: `Upstream Bitcoin Cash Node v29.1.0.
+
+Switching networks now moves the ports with it.
 
 Bitcoin Cash Node listens for RPC and peer connections on a different port for each network, but changing the network only restarted the node — it left the previous network's ports registered with StartOS. The node was then listening on one port while StartOS advertised another, so its own RPC address no longer worked and no service that depends on it could reach it, until the package was rebuilt by hand. The ports are now re-registered as part of the change.`,
     es_ES: `Cambiar de red ahora mueve también los puertos.

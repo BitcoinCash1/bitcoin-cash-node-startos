@@ -13,7 +13,7 @@ export const manifest = setupManifest({
   volumes: ['main'],
   images: {
     'bitcoin-cash-node': {
-      source: { dockerTag: 'mainnet/bitcoin-cash-node:v29.0.0' },
+      source: { dockerTag: 'mainnet/bitcoin-cash-node:v29.1.0' },
       arch: ['x86_64', 'aarch64'],
       emulateMissingAs: 'x86_64',
     },

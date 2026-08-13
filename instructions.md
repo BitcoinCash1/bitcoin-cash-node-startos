@@ -110,7 +110,7 @@ Beyond the four Config actions above, the service exposes:
 
 ## May 2026 network upgrade
 
-BCHN v29.0.0 implements the **May 15, 2026 network upgrade**:
+BCHN v29.1.0 implements the **May 15, 2026 network upgrade**:
 
 - **P2S32** — Pay-to-Script-Hash with 32-byte hashes.
 - **Native Loops** — looping opcodes in scripts.
@@ -118,7 +118,7 @@ BCHN v29.0.0 implements the **May 15, 2026 network upgrade**:
 - **Bitwise Operations** — new bitwise opcodes.
 
 Nodes running v28.x stopped following the main chain after the upgrade activated.
-**Upgrade to v29.0.0 immediately if you are on an older version.**
+**Upgrade to v29.1.0 immediately if you are on an older version.**
 
 ## Limitations
 

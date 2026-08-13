@@ -12,7 +12,7 @@
 
 Bitcoin Cash Node (BCHN) is the reference C++ implementation of the Bitcoin Cash protocol — a full node that downloads, verifies, and relays the entire BCH blockchain. See the [upstream project](https://gitlab.com/bitcoin-cash-node/bitcoin-cash-node) for general BCHN documentation.
 
-This package wraps **BCHN v29.0.0**, which implements the May 15, 2026 network upgrade (P2S32, native loops, functions, bitwise opcodes). Nodes running v28.x stop following the main chain after that upgrade activates.
+This package wraps **BCHN v29.1.0**, which implements the May 15, 2026 network upgrade (P2S32, native loops, functions, bitwise opcodes). Nodes running v28.x stop following the main chain after that upgrade activates.
 
 ---
 
@@ -40,7 +40,7 @@ This package wraps **BCHN v29.0.0**, which implements the May 15, 2026 network u
 
 | Property      | Value                                            |
 | ------------- | ------------------------------------------------ |
-| Image         | `mainnet/bitcoin-cash-node:v29.0.0` (Docker Hub) |
+| Image         | `mainnet/bitcoin-cash-node:v29.1.0` (Docker Hub) |
 | Architectures | x86_64, aarch64 (aarch64 emulated as x86_64)     |
 | Command       | `bitcoind` with StartOS-managed flags            |
 
@@ -212,7 +212,7 @@ Values seeded into `bitcoin.conf` / `store.json` on install:
 
 ## Limitations and Differences
 
-1. **Pre-built upstream image** — pulls `mainnet/bitcoin-cash-node:v29.0.0` rather than building from source.
+1. **Pre-built upstream image** — pulls `mainnet/bitcoin-cash-node:v29.1.0` rather than building from source.
 2. **RPC bound to `0.0.0.0`** — so dependent StartOS containers (Fulcrum BCH, BCH Explorer) can reach the node; authentication is via the generated `rpcuser`/`rpcpassword` and any `rpcauth` entries.
 3. **Tor inbound is manual** — `-listenonion` is disabled because the StartOS Tor service exposes only a Unix control socket; use an onion service on the Peer interface for inbound onion connectivity.
 4. **DSP relay always on** — Double Spend Proof ZMQ streams (28334/28335) are always active regardless of the ZeroMQ toggle.
@@ -239,7 +239,7 @@ Build and development workflow follow the StartOS packaging guide: <https://docs
 
 ```yaml
 package_id: bitcoincashd
-image: mainnet/bitcoin-cash-node:v29.0.0
+image: mainnet/bitcoin-cash-node:v29.1.0
 architectures: [x86_64, aarch64]
 volumes:
   main: /data
