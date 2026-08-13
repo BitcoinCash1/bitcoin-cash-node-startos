@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   check:
@@ -51,4 +52,9 @@ jobs:
 
           echo "Updating $CURRENT -> $LATEST"
           bash scripts/auto-bump.sh "$LATEST"
+          # GITHUB_TOKEN pushes do not trigger Tag and Release. Dispatch it
+          # so the bumped tree is built and published, not just versioned.
+          gh workflow run tagAndRelease.yml
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash

@@ -4,6 +4,10 @@ on:
   push:
     branches: ['master']
     paths-ignore: ['*.md']
+  # GITHUB_TOKEN commits from check-upstream do not start a new push
+  # workflow. The bump job calls this by workflow_dispatch so the new
+  # image is actually packed into an s9pk.
+  workflow_dispatch:
 
 permissions:
   contents: write
