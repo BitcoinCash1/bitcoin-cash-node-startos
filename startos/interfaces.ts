@@ -16,13 +16,9 @@ import { storeJson } from './fileModels/store.json'
 export const setInterfaces = sdk.setupInterfaces(async ({ effects }) => {
   const bitcoinConf = await bitcoinConfFile.read().const(effects)
 
-  // Reactive, and load-bearing: this pass binds the RPC and P2P ports for the
-  // chain the node is on, and those ports move with the chain. Read `.once()`
-  // and switching chains leaves the old chain's ports bound — the node listens
-  // on the new ones inside the container while StartOS still advertises the
-  // old, so its own RPC address is dead and no dependent can reach it until
-  // someone rebuilds the package. Mapped to the chain alone so the other
-  // `store.json` writes (sync flags, reindex flags) don't re-run the pass.
+  // Reactive, and load-bearing: the RPC and P2P ports move with the chain, so a
+  // `.once()` read here leaves the old chain's ports bound after a switch.
+  // Mapped to the chain alone so the other `store.json` writes don't re-run it.
   const network: Network =
     (await storeJson.read((s) => s.network).const(effects)) ?? 'mainnet'
   const { rpc: rpcPort, peer: peerPort } = networkPorts[network]
