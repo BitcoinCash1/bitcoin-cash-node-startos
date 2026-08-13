@@ -92,7 +92,7 @@ BCHN is configured through **StartOS actions** that write to `bitcoin.conf` (INI
 | **RPC & Peers Settings**  | RPC timeout/threads/workqueue, max connections, max upload target, bloom filters, allowed networks, peers |
 | **Mempool & Block Policy**| max mempool, min relay fee, mempool expiry, excessive block size, ancestor/descendant limits          |
 
-Selecting a network switches the data directory and the RPC/P2P port set automatically. Enabling pruning forces `txindex` off (the two are incompatible). Double Spend Proof (DSP) relay is always forced on.
+Selecting a network switches the data directory and the RPC/P2P port set automatically. The advertised RPC/P2P bindings follow `store.network` reactively (a `.once()` read used to leave the previous network's ports registered). Enabling pruning forces `txindex` off (the two are incompatible). Double Spend Proof (DSP) relay is always forced on.
 
 Settings that are always managed by StartOS (not user-editable):
 
