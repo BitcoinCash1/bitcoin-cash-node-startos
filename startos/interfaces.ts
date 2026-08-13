@@ -10,8 +10,10 @@ import { storeJson } from './fileModels/store.json'
 export const setInterfaces = sdk.setupInterfaces(async ({ effects }) => {
   const bitcoinConf = await bitcoinConfFile.read().const(effects)
 
-  const store = await storeJson.read().once()
-  const network: Network = store?.network ?? 'mainnet'
+  // Reactive: RPC/P2P ports move with the chain. `.once()` left the previous
+  // network's ports advertised after a switch (Start9-Community #8).
+  const network: Network =
+    (await storeJson.read((s) => s.network).const(effects)) ?? 'mainnet'
   const { rpc: rpcPort, peer: peerPort } = networkPorts[network]
 
   const receipts = []
