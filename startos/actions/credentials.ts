@@ -2,15 +2,17 @@ import { sdk } from '../sdk'
 import { storeJson } from '../fileModels/store.json'
 import { bitcoinConfFile } from '../fileModels/bitcoin.conf'
 import { networkPorts, Network } from '../utils'
+import { i18n } from '../i18n'
 
 const { InputSpec, Value } = sdk
 
 export const viewCredentials = sdk.Action.withInput(
   'view-credentials',
   async ({ effects }) => ({
-    name: 'View RPC Credentials',
-    description:
+    name: i18n('View RPC Credentials'),
+    description: i18n(
       'Select a credential by name to view its username, password, and RPC port.',
+    ),
     warning: null,
     allowedStatuses: 'any',
     group: 'Credentials',
@@ -32,8 +34,8 @@ export const viewCredentials = sdk.Action.withInput(
 
     return InputSpec.of({
       name: Value.select({
-        name: 'Credential',
-        description: 'Select a credential to view its details.',
+        name: i18n('Credential'),
+        description: i18n('Select a credential to view its details.'),
         values,
         default: 'Default',
       }),
@@ -52,12 +54,12 @@ export const viewCredentials = sdk.Action.withInput(
       const pass = store?.rpcPassword ?? ''
       return {
         version: '1' as const,
-        title: 'RPC Credential: Default',
+        title: i18n('RPC Credential: ${name}', { name: 'Default' }),
         message: [
-          '**Name:** Default (active)',
-          `**Username:** ${user}`,
-          `**Password:** ${pass}`,
-          `**Port:** ${port}`,
+          i18n('**Name:** ${name} (active)', { name: 'Default' }),
+          i18n('**Username:** ${username}', { username: user }),
+          i18n('**Password:** ${password}', { password: pass }),
+          i18n('**Port:** ${port}', { port: String(port) }),
         ].join('\n'),
         result: {
           type: 'single' as const,
@@ -73,12 +75,12 @@ export const viewCredentials = sdk.Action.withInput(
     // recoverable and is shown once. Never add a path that keeps the plaintext.
     return {
       version: '1' as const,
-      title: `RPC Credential: ${input.name}`,
+      title: i18n('RPC Credential: ${name}', { name: input.name }),
       message: [
-        `**Name:** ${input.name}`,
-        `**Username:** ${input.name}`,
-        '**Password:** *(set at generation — not recoverable)*',
-        `**Port:** ${port}`,
+        i18n('**Name:** ${name}', { name: input.name }),
+        i18n('**Username:** ${username}', { username: input.name }),
+        i18n('**Password:** *(set at generation — not recoverable)*'),
+        i18n('**Port:** ${port}', { port: String(port) }),
       ].join('\n'),
       result: {
         type: 'single' as const,

@@ -2,16 +2,19 @@ import { sdk } from '../sdk'
 import { storeJson } from '../fileModels/store.json'
 import { mainMounts } from '../mounts'
 import { rootDir, Network } from '../utils'
+import { i18n } from '../i18n'
 
 const { InputSpec, Value } = sdk
 
 const inputSpec = InputSpec.of({
   networks: Value.multiselect({
-    name: 'Networks To Delete',
-    description:
+    name: i18n('Networks To Delete'),
+    description: i18n(
       'Delete all BCHN blockchain data for the selected test networks. Mainnet is intentionally excluded and cannot be selected.',
-    warning:
+    ),
+    warning: i18n(
       'This permanently deletes all blockchain data for the selected networks. You cannot undo this. Mainnet data is never affected.',
+    ),
     default: [],
     minLength: 0,
     maxLength: null,
@@ -36,11 +39,13 @@ const testNetSubdirs: Record<string, string> = {
 export const deleteTestNetworkData = sdk.Action.withInput(
   'delete-test-network-data',
   async ({ effects: _effects }) => ({
-    name: 'Delete Test Network Data',
-    description:
+    name: i18n('Delete Test Network Data'),
+    description: i18n(
       'Delete blockchain data for one or more test networks (Testnet3, Testnet4, Scalenet, Chipnet, Regtest). This frees disk space without touching mainnet.',
-    warning:
+    ),
+    warning: i18n(
       'All block data and chainstate for the selected networks will be permanently deleted. Mainnet is never affected.',
+    ),
     allowedStatuses: 'any' as const,
     group: 'Maintenance',
     visibility: 'enabled' as const,
@@ -59,8 +64,8 @@ export const deleteTestNetworkData = sdk.Action.withInput(
     if (networks.length === 0) {
       return {
         version: '1' as const,
-        title: 'Nothing to Delete',
-        message: 'No networks were selected.',
+        title: i18n('Nothing to Delete'),
+        message: i18n('No networks were selected.'),
         result: null,
       }
     }
@@ -70,8 +75,11 @@ export const deleteTestNetworkData = sdk.Action.withInput(
     if (activeTestNet && networks.includes(activeTestNet)) {
       return {
         version: '1' as const,
-        title: 'Cannot Delete Active Network',
-        message: `BCHN is currently running on ${activeTestNet}. Stop the service and switch to a different network before deleting its data.`,
+        title: i18n('Cannot Delete Active Network'),
+        message: i18n(
+          'BCHN is currently running on ${activeTestNet}. Stop the service and switch to a different network before deleting its data.',
+          { activeTestNet },
+        ),
         result: null,
       }
     }
@@ -94,15 +102,17 @@ export const deleteTestNetworkData = sdk.Action.withInput(
     if (removed.length === 0) {
       return {
         version: '1' as const,
-        title: 'Nothing Removed',
-        message: 'The selected network data directories did not exist.',
+        title: i18n('Nothing Removed'),
+        message: i18n('The selected network data directories did not exist.'),
         result: null,
       }
     }
     return {
       version: '1' as const,
-      title: 'Test Network Data Deleted',
-      message: `Removed: ${removed.join(', ')}. Mainnet data was not touched.`,
+      title: i18n('Test Network Data Deleted'),
+      message: i18n('Removed: ${removed}. Mainnet data was not touched.', {
+        removed: removed.join(', '),
+      }),
       result: null,
     }
   },

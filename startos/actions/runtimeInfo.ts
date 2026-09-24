@@ -7,13 +7,15 @@ import {
   GetNetworkInfo,
 } from '../utils'
 import { mainMounts } from '../mounts'
+import { i18n } from '../i18n'
 
 export const runtimeInfo = sdk.Action.withoutInput(
   'runtime-info',
   async ({ effects: _effects }) => ({
-    name: 'Node Info',
-    description:
+    name: i18n('Node Info'),
+    description: i18n(
       'Display current node runtime information: version, network, connections, sync status.',
+    ),
     warning: null,
     allowedStatuses: 'only-running' as const,
     group: null,
@@ -54,25 +56,45 @@ export const runtimeInfo = sdk.Action.withoutInput(
 
         const lines: string[] = []
         if (net) {
-          lines.push(`Version: ${net.subversion}`)
-          lines.push(`Network Active: ${net.networkactive ? 'Yes' : 'No'}`)
+          lines.push(i18n('Version: ${version}', { version: net.subversion }))
           lines.push(
-            `Connections: ${net.connections} (in: ${net.connections_in}, out: ${net.connections_out})`,
+            i18n('Network Active: ${active}', {
+              active: net.networkactive ? i18n('Yes') : i18n('No'),
+            }),
+          )
+          lines.push(
+            i18n('Connections: ${total} (in: ${inbound}, out: ${outbound})', {
+              total: String(net.connections),
+              inbound: String(net.connections_in),
+              outbound: String(net.connections_out),
+            }),
           )
         }
         if (chain) {
           lines.push(
-            `Chain: ${chain.pruned ? 'pruned' : 'archival'} ${network}`,
+            i18n('Chain: ${kind} ${network}', {
+              kind: chain.pruned ? i18n('pruned') : i18n('archival'),
+              network,
+            }),
           )
-          lines.push(`Blocks: ${chain.blocks} / ${chain.headers}`)
           lines.push(
-            `Sync: ${chain.initialblockdownload ? `${(chain.verificationprogress * 100).toFixed(2)}%` : 'Complete'}`,
+            i18n('Blocks: ${blocks} / ${headers}', {
+              blocks: String(chain.blocks),
+              headers: String(chain.headers),
+            }),
+          )
+          lines.push(
+            i18n('Sync: ${status}', {
+              status: chain.initialblockdownload
+                ? `${(chain.verificationprogress * 100).toFixed(2)}%`
+                : i18n('Complete'),
+            }),
           )
         }
 
         return {
           version: '1' as const,
-          title: 'Node Runtime Info',
+          title: i18n('Node Runtime Info'),
           message: null,
           result: {
             type: 'single' as const,

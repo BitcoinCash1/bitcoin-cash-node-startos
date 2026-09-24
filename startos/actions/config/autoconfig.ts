@@ -1,13 +1,15 @@
 import { bitcoinConfFile, fullConfigSpec } from '../../fileModels/bitcoin.conf'
 import { sdk } from '../../sdk'
+import { i18n } from '../../i18n'
 
 export const autoconfig = sdk.Action.withInput(
   'autoconfig',
 
   async ({ effects }) => ({
-    name: 'Auto-Configure',
-    description:
+    name: i18n('Auto-Configure'),
+    description: i18n(
       'Automatically configure bitcoin.conf for the needs of another service',
+    ),
     warning: null,
     allowedStatuses: 'any',
     group: null,

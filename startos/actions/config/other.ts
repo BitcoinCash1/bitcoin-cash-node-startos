@@ -1,12 +1,14 @@
 import { sdk } from '../../sdk'
 import { bitcoinConfFile, fullConfigSpec } from '../../fileModels/bitcoin.conf'
+import { i18n } from '../../i18n'
 
 export const otherConfig = sdk.Action.withInput(
   'other-config',
   async ({ effects: _effects }) => ({
-    name: 'Node Settings',
-    description:
+    name: i18n('Node Settings'),
+    description: i18n(
       'Indexes, pruning, ZeroMQ, mempool persistence, performance cache, and advanced options.',
+    ),
     warning: null,
     allowedStatuses: 'any' as const,
     group: 'Configuration',

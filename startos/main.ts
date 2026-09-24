@@ -11,6 +11,7 @@ import {
 import { bitcoinConfFile } from './fileModels/bitcoin.conf'
 import { storeJson } from './fileModels/store.json'
 import { mainMounts } from './mounts'
+import { i18n } from './i18n'
 
 export { mainMounts }
 
@@ -31,7 +32,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
   const netFlag = networkFlag[network]
   const netLabel = network.charAt(0).toUpperCase() + network.slice(1)
 
-  console.log('Starting Bitcoin Cash Node (BCHN)!')
+  console.log(i18n('Starting Bitcoin Cash Node (BCHN)!'))
 
   // Read and clear reindex flags
   const reindexBlockchain = store?.reindexBlockchain ?? false
@@ -145,7 +146,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
 
   const excludedByOnlynet = () => ({
     result: 'disabled' as const,
-    message: 'Excluded by onlynet',
+    message: i18n('Excluded by onlynet'),
   })
 
   return sdk.Daemons.of(effects)
@@ -193,19 +194,22 @@ export const main = sdk.setupMain(async ({ effects }) => {
         sigtermTimeout: 300_000,
       },
       ready: {
-        display: 'RPC',
+        display: i18n('RPC'),
         fn: async () => {
           try {
             const res = await rpcCall('getrpcinfo')
             return res.exitCode === 0
-              ? { message: 'BCHN RPC Interface is ready', result: 'success' }
+              ? {
+                  message: i18n('BCHN RPC Interface is ready'),
+                  result: 'success',
+                }
               : {
-                  message: 'The BCHN RPC Interface is not ready',
+                  message: i18n('The BCHN RPC Interface is not ready'),
                   result: 'starting',
                 }
           } catch {
             return {
-              message: 'The BCHN RPC Interface is not ready',
+              message: i18n('The BCHN RPC Interface is not ready'),
               result: 'starting',
             }
           }
@@ -215,7 +219,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
     })
     .addHealthCheck('sync-progress', {
       ready: {
-        display: 'Blockchain Sync',
+        display: i18n('Blockchain Sync'),
         trigger: sdk.trigger.statusTrigger(30_000, {
           starting: 5_000,
           failure: 5_000,
@@ -224,7 +228,10 @@ export const main = sdk.setupMain(async ({ effects }) => {
           try {
             const res = await rpcCall('getblockchaininfo')
             if (res.exitCode !== 0)
-              return { message: 'Waiting for sync info', result: 'loading' }
+              return {
+                message: i18n('Waiting for sync info'),
+                result: 'loading',
+              }
             const stdout = res.stdout.toString()
             const info: GetBlockchainInfo = JSON.parse(stdout)
             const pct = info.verificationprogress * 100
@@ -233,16 +240,23 @@ export const main = sdk.setupMain(async ({ effects }) => {
             // already at 1.0 — reporting "Syncing 100%" there is nonsense.
             if (info.initialblockdownload && pct < 99.99) {
               return {
-                message: `Syncing blocks...${pct.toFixed(2)}% (${netLabel})`,
+                message: i18n('Syncing blocks...${pct}% (${netLabel})', {
+                  pct: pct.toFixed(2),
+                  netLabel,
+                }),
                 result: 'loading',
               }
             }
             return {
-              message: `Synced — block ${info.blocks}${info.pruned ? ' (pruned)' : ''} (${netLabel})`,
+              message: i18n('Synced — block ${blocks}${pruned} (${netLabel})', {
+                blocks: String(info.blocks),
+                pruned: info.pruned ? i18n(' (pruned)') : '',
+                netLabel,
+              }),
               result: 'success',
             }
           } catch {
-            return { message: 'Waiting for sync info', result: 'loading' }
+            return { message: i18n('Waiting for sync info'), result: 'loading' }
           }
         },
       },
@@ -263,7 +277,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
     })
     .addHealthCheck('peer-connections', {
       ready: {
-        display: 'Peer Connections',
+        display: i18n('Peer Connections'),
         trigger: sdk.trigger.statusTrigger(30_000, {
           starting: 5_000,
           failure: 5_000,
@@ -272,28 +286,42 @@ export const main = sdk.setupMain(async ({ effects }) => {
           try {
             const res = await rpcCall('getpeerinfo')
             if (res.exitCode !== 0)
-              return { message: 'Unable to query peers', result: 'loading' }
+              return {
+                message: i18n('Unable to query peers'),
+                result: 'loading',
+              }
             const stdout = res.stdout.toString()
             const peers: GetPeerInfo = JSON.parse(stdout)
             const count = peers.length
             if (count === 0)
               return {
-                message:
+                message: i18n(
                   'No peers connected — node may be starting up or isolated',
+                ),
                 result: 'loading',
               }
             if (count < 3)
               return {
-                message: `Only ${count} peer(s) connected — network connectivity may be limited`,
+                message: i18n(
+                  'Only ${count} peer(s) connected — network connectivity may be limited',
+                  { count: String(count) },
+                ),
                 result: 'loading',
               }
             const inbound = peers.filter((p) => p.inbound).length
             return {
-              message: `${count} peers (${count - inbound} outbound, ${inbound} inbound)`,
+              message: i18n(
+                '${count} peers (${outbound} outbound, ${inbound} inbound)',
+                {
+                  count: String(count),
+                  outbound: String(count - inbound),
+                  inbound: String(inbound),
+                },
+              ),
               result: 'success',
             }
           } catch {
-            return { message: 'Unable to query peers', result: 'loading' }
+            return { message: i18n('Unable to query peers'), result: 'loading' }
           }
         },
       },
@@ -301,25 +329,25 @@ export const main = sdk.setupMain(async ({ effects }) => {
     })
     .addHealthCheck('tor', {
       ready: {
-        display: 'Tor',
+        display: i18n('Tor'),
         fn: () => {
           if (!torInstalled)
             return {
               result: 'disabled' as const,
-              message: 'Tor is not installed',
+              message: i18n('Tor is not installed'),
             }
           if (!torRunning)
             return {
               result: 'disabled' as const,
-              message: 'Tor is not running',
+              message: i18n('Tor is not running'),
             }
           if (onlynetActive && !onlynetList.includes('onion'))
             return excludedByOnlynet()
           return {
             result: 'success' as const,
             message: externalip.some((ip) => ip?.includes('.onion'))
-              ? 'Inbound and outbound connections'
-              : 'Outbound only. Add an onion address to enable inbound.',
+              ? i18n('Inbound and outbound connections')
+              : i18n('Outbound only. Add an onion address to enable inbound.'),
           }
         },
       },
@@ -327,7 +355,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
     })
     .addHealthCheck('clearnet', {
       ready: {
-        display: 'Clearnet',
+        display: i18n('Clearnet'),
         fn: () => {
           if (
             onlynetActive &&
@@ -338,8 +366,8 @@ export const main = sdk.setupMain(async ({ effects }) => {
           return {
             result: 'success' as const,
             message: externalip.some((ip) => ip && !ip.includes('.onion'))
-              ? 'Inbound and outbound connections'
-              : 'Outbound only. Publish an IP address to enable inbound.',
+              ? i18n('Inbound and outbound connections')
+              : i18n('Outbound only. Publish an IP address to enable inbound.'),
           }
         },
       },

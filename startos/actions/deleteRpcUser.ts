@@ -1,15 +1,17 @@
 import { sdk } from '../sdk'
 import { bitcoinConfFile } from '../fileModels/bitcoin.conf'
+import { i18n } from '../i18n'
 
 const { InputSpec, Value } = sdk
 
 export const deleteRpcUser = sdk.Action.withInput(
   'delete-rpc-user',
   async ({ effects: _effects }) => ({
-    name: 'Delete RPC Users',
-    description:
+    name: i18n('Delete RPC Users'),
+    description: i18n(
       'Remove one or more rpcauth entries. Selected users will no longer be able to authenticate via RPC after the next restart.',
-    warning: 'Selected RPC users will lose access on next restart.',
+    ),
+    warning: i18n('Selected RPC users will lose access on next restart.'),
     allowedStatuses: 'any' as const,
     group: 'Credentials',
     visibility: 'enabled' as const,
@@ -31,8 +33,8 @@ export const deleteRpcUser = sdk.Action.withInput(
 
     return InputSpec.of({
       usernames: Value.multiselect({
-        name: 'Existing RPC Users',
-        description: 'Select one or more RPC users to remove.',
+        name: i18n('Existing RPC Users'),
+        description: i18n('Select one or more RPC users to remove.'),
         warning: null,
         default: [],
         values: users,
@@ -45,8 +47,8 @@ export const deleteRpcUser = sdk.Action.withInput(
     if (!usernames || (usernames as string[]).length === 0) {
       return {
         version: '1' as const,
-        title: 'No Users Selected',
-        message: 'No RPC users were selected. Nothing was changed.',
+        title: i18n('No Users Selected'),
+        message: i18n('No RPC users were selected. Nothing was changed.'),
         result: null,
       }
     }
@@ -72,8 +74,10 @@ export const deleteRpcUser = sdk.Action.withInput(
     const deleted = [...toDelete].join(', ')
     return {
       version: '1' as const,
-      title: 'RPC Users Deleted',
-      message: `Removed: ${deleted}. Restart the node to apply.`,
+      title: i18n('RPC Users Deleted'),
+      message: i18n('Removed: ${deleted}. Restart the node to apply.', {
+        deleted,
+      }),
       result: null,
     }
   },

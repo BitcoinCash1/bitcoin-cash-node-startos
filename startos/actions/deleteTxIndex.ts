@@ -1,15 +1,18 @@
 import { sdk } from '../sdk'
 import { mainMounts } from '../mounts'
 import { rootDir } from '../utils'
+import { i18n } from '../i18n'
 
 export const deleteTxIndex = sdk.Action.withoutInput(
   'delete-tx-index',
   async ({ effects: _effects }) => ({
-    name: 'Delete Transaction Index',
-    description:
+    name: i18n('Delete Transaction Index'),
+    description: i18n(
       'Delete a corrupted transaction index. The index will be rebuilt automatically on next startup if txindex is still enabled.',
-    warning:
+    ),
+    warning: i18n(
       'The transaction index will be deleted. If txindex is enabled, it will be rebuilt on startup (this can take hours).',
+    ),
     allowedStatuses: 'only-stopped' as const,
     group: 'Maintenance',
     visibility: 'enabled' as const,
@@ -26,9 +29,10 @@ export const deleteTxIndex = sdk.Action.withoutInput(
     )
     return {
       version: '1' as const,
-      title: 'Transaction Index Deleted',
-      message:
+      title: i18n('Transaction Index Deleted'),
+      message: i18n(
         'indexes/txindex has been removed. Enable txindex and restart to rebuild.',
+      ),
       result: null,
     }
   },

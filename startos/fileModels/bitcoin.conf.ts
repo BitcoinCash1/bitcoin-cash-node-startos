@@ -2,6 +2,7 @@ import { FileHelper, T, z } from '@start9labs/start-sdk'
 import { totalmem } from 'os'
 import { sdk } from '../sdk'
 import { zmqBundle, dspZmqBundle } from '../utils'
+import { i18n } from '../i18n'
 
 // INI coercion helpers: INI parsing returns strings, with duplicate keys producing arrays.
 const iniString = z
@@ -106,42 +107,47 @@ export const fullConfigSpec = InputSpec.of({
 
   // ── Node Settings ──────────────────────────────────────────────────────────
   zmqEnabled: Value.toggle({
-    name: 'ZeroMQ Enabled',
-    description:
+    name: i18n('ZeroMQ Enabled'),
+    description: i18n(
       'Enable ZeroMQ notifications for block and transaction events. Required by Fulcrum, block explorers, and similar tools.',
+    ),
     default: true,
   }),
   txindex: Value.toggle({
-    name: 'Transaction Index',
-    description:
+    name: i18n('Transaction Index'),
+    description: i18n(
       'Build a full transaction index. Required for Fulcrum and other indexers. Cannot be enabled with pruning.',
+    ),
     default: true,
   }),
   prune: Value.number({
-    name: 'Prune Target',
-    description:
+    name: i18n('Prune Target'),
+    description: i18n(
       'Limit blockchain storage (MB). 0 = disabled. Min 550 MB when enabled. Incompatible with txindex.',
+    ),
     required: false,
     default: 0,
     min: 0,
     max: null,
     integer: true,
     units: 'MB',
-    placeholder: '0 (disabled)',
-    warning: 'Enabling pruning disables the transaction index.',
+    placeholder: i18n('0 (disabled)'),
+    warning: i18n('Enabling pruning disables the transaction index.'),
   }),
   persistmempool: Value.toggle({
-    name: 'Persist Mempool',
-    description:
+    name: i18n('Persist Mempool'),
+    description: i18n(
       'Save the mempool to disk on shutdown and reload it on startup. Reduces re-propagation work after restarts.',
+    ),
     default: true,
   }),
 
   // ── Performance ────────────────────────────────────────────────────────────
   dbcache: Value.number({
-    name: 'Database Cache',
-    description:
+    name: i18n('Database Cache'),
+    description: i18n(
       'Size of the in-memory UTXO database cache. Larger values speed up IBD and general operation. Defaults to 25% of system RAM (max 5120 MB).',
+    ),
     required: false,
     default: null,
     min: 4,
@@ -153,9 +159,10 @@ export const fullConfigSpec = InputSpec.of({
     ),
   }),
   dbbatchsize: Value.number({
-    name: 'Database Batch Size',
-    description:
+    name: i18n('Database Batch Size'),
+    description: i18n(
       'Maximum database write batch size in bytes. Increasing this can improve IBD performance at the cost of peak memory usage.',
+    ),
     required: false,
     default: null,
     min: 1024,
@@ -167,8 +174,8 @@ export const fullConfigSpec = InputSpec.of({
 
   // ── RPC ───────────────────────────────────────────────────────────────────
   rpcservertimeout: Value.number({
-    name: 'RPC Server Timeout',
-    description: 'Seconds before an RPC call times out.',
+    name: i18n('RPC Server Timeout'),
+    description: i18n('Seconds before an RPC call times out.'),
     required: false,
     default: null,
     min: 5,
@@ -178,8 +185,8 @@ export const fullConfigSpec = InputSpec.of({
     placeholder: '30',
   }),
   rpcthreads: Value.number({
-    name: 'RPC Threads',
-    description: 'Number of threads for RPC calls.',
+    name: i18n('RPC Threads'),
+    description: i18n('Number of threads for RPC calls.'),
     required: false,
     default: 4,
     min: 1,
@@ -189,8 +196,8 @@ export const fullConfigSpec = InputSpec.of({
     placeholder: '4',
   }),
   rpcworkqueue: Value.number({
-    name: 'RPC Work Queue',
-    description: 'Depth of the RPC work queue.',
+    name: i18n('RPC Work Queue'),
+    description: i18n('Depth of the RPC work queue.'),
     required: false,
     default: 64,
     min: 8,
@@ -202,8 +209,8 @@ export const fullConfigSpec = InputSpec.of({
 
   // ── Peer Connections ───────────────────────────────────────────────────────
   maxconnections: Value.number({
-    name: 'Maximum Connections',
-    description: 'Maximum number of peer connections.',
+    name: i18n('Maximum Connections'),
+    description: i18n('Maximum number of peer connections.'),
     default: 125,
     required: false,
     min: 8,
@@ -212,35 +219,40 @@ export const fullConfigSpec = InputSpec.of({
     placeholder: '125',
   }),
   maxuploadtarget: Value.number({
-    name: 'Max Upload Target',
-    description: 'Limit total outbound bandwidth per 24 hours. 0 = unlimited.',
+    name: i18n('Max Upload Target'),
+    description: i18n(
+      'Limit total outbound bandwidth per 24 hours. 0 = unlimited.',
+    ),
     required: false,
     default: null,
     min: 0,
     max: null,
     integer: true,
     units: 'MB/day',
-    placeholder: '0 (unlimited)',
+    placeholder: i18n('0 (unlimited)'),
   }),
   peerbloomfilters: Value.toggle({
-    name: 'Serve Bloom Filters (BIP37)',
-    description:
+    name: i18n('Serve Bloom Filters (BIP37)'),
+    description: i18n(
       'Serve BIP37 bloom filters to peers. Useful for SPV wallets but can be a DoS vector on public-facing nodes.',
+    ),
     default: true,
   }),
   onlynet: Value.multiselect({
-    name: 'Allowed Networks',
-    description:
+    name: i18n('Allowed Networks'),
+    description: i18n(
       'Restrict peer connections to specific network types. Uncheck a network to exclude it. All checked = allow all (default).',
+    ),
     default: ALL_ONLYNETS,
     values: ONLYNET_VALUES,
   }),
   addnode: Value.list(
     List.text(
       {
-        name: 'Add Peers',
-        description:
+        name: i18n('Add Peers'),
+        description: i18n(
           'Manually add specific peers by address (ip:port or hostname:port). The node will always maintain connections to these peers.',
+        ),
         default: [],
         minLength: null,
         maxLength: null,
@@ -254,8 +266,8 @@ export const fullConfigSpec = InputSpec.of({
 
   // ── Mempool & Relay ───────────────────────────────────────────────────────
   maxmempool: Value.number({
-    name: 'Max Mempool Size',
-    description: 'Maximum mempool memory usage in MB.',
+    name: i18n('Max Mempool Size'),
+    description: i18n('Maximum mempool memory usage in MB.'),
     required: false,
     default: null,
     min: 5,
@@ -265,9 +277,10 @@ export const fullConfigSpec = InputSpec.of({
     placeholder: '300',
   }),
   minrelaytxfee: Value.number({
-    name: 'Minimum Relay Fee',
-    description:
+    name: i18n('Minimum Relay Fee'),
+    description: i18n(
       'Minimum fee rate (BCH/kB) for relaying transactions. Must be above 0; Bitcoin Cash Node refuses to start with 0.',
+    ),
     required: false,
     default: null,
     min: 0.00000001,
@@ -278,8 +291,8 @@ export const fullConfigSpec = InputSpec.of({
     step: 0.000001,
   }),
   mempoolexpiry: Value.number({
-    name: 'Mempool Expiry',
-    description: 'Hours before unconfirmed transactions are evicted.',
+    name: i18n('Mempool Expiry'),
+    description: i18n('Hours before unconfirmed transactions are evicted.'),
     required: false,
     default: null,
     min: 1,
@@ -291,9 +304,10 @@ export const fullConfigSpec = InputSpec.of({
 
   // ── Block Policy ──────────────────────────────────────────────────────────
   excessiveblocksize: Value.number({
-    name: 'Excessive Block Size',
-    description:
+    name: i18n('Excessive Block Size'),
+    description: i18n(
       'Max accepted block size in bytes. BCHN default: 32000000 (32 MB).',
+    ),
     required: false,
     default: null,
     min: 1000000,
@@ -305,9 +319,10 @@ export const fullConfigSpec = InputSpec.of({
 
   // ── Advanced ──────────────────────────────────────────────────────────────
   blocknotify: Value.text({
-    name: 'Block Notify Script',
-    description:
+    name: i18n('Block Notify Script'),
+    description: i18n(
       'Execute this shell command when a new block is received. Use %s as a placeholder for the block hash.',
+    ),
     required: false,
     default: null,
     masked: false,
@@ -316,9 +331,10 @@ export const fullConfigSpec = InputSpec.of({
   wallet: Value.list(
     List.text(
       {
-        name: 'Wallet Files',
-        description:
+        name: i18n('Wallet Files'),
+        description: i18n(
           'Specify wallet file names to load on startup. Leave empty to use the default wallet.',
+        ),
         default: [],
         minLength: null,
         maxLength: null,

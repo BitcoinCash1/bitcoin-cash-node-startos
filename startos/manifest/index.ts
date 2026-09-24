@@ -1,5 +1,5 @@
 import { setupManifest } from '@start9labs/start-sdk'
-import { long, short } from './i18n'
+import { long, short, torDescription } from './i18n'
 
 export const manifest = setupManifest({
   id: 'bitcoincashd',
@@ -20,8 +20,7 @@ export const manifest = setupManifest({
   },
   dependencies: {
     tor: {
-      description:
-        'Enables Tor onion routing for anonymous peer-to-peer connections. When Tor is installed and running, Bitcoin Cash Node automatically routes all connections through the Tor network for enhanced privacy.',
+      description: torDescription,
       optional: true,
       metadata: {
         title: 'Tor',

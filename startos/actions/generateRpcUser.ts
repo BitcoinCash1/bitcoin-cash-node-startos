@@ -1,13 +1,14 @@
 import { createHmac, randomBytes } from 'crypto'
 import { sdk } from '../sdk'
 import { bitcoinConfFile } from '../fileModels/bitcoin.conf'
+import { i18n } from '../i18n'
 
 const { InputSpec, Value } = sdk
 
 const spec = InputSpec.of({
   username: Value.text({
-    name: 'Username',
-    description: 'Alphanumeric username for the new RPC user.',
+    name: i18n('Username'),
+    description: i18n('Alphanumeric username for the new RPC user.'),
     required: true,
     default: null,
     masked: false,
@@ -28,9 +29,10 @@ function generateRpcAuth(username: string): {
 export const generateRpcUser = sdk.Action.withInput(
   'generate-rpc-user',
   async ({ effects: _effects }) => ({
-    name: 'Generate RPC Credentials',
-    description:
+    name: i18n('Generate RPC Credentials'),
+    description: i18n(
       'Create a new rpcauth entry for an external service (wallet, indexer, miner). The generated password is displayed once — save it immediately.',
+    ),
     warning: null,
     allowedStatuses: 'any' as const,
     group: 'Credentials',
@@ -60,8 +62,8 @@ export const generateRpcUser = sdk.Action.withInput(
 
     return {
       version: '1' as const,
-      title: `RPC Credentials: ${username}`,
-      message: 'Save this password now — it will not be shown again.',
+      title: i18n('RPC Credentials: ${username}', { username }),
+      message: i18n('Save this password now — it will not be shown again.'),
       result: {
         type: 'single' as const,
         value: password,
