@@ -7,7 +7,7 @@ on:
 
 permissions:
   contents: write
-  actions: write
+  pull-requests: write
 
 jobs:
   check:
@@ -31,30 +31,20 @@ jobs:
             exit 0
           fi
 
-          CURRENT=$(python3 - <<'PY'
-          import re
-          from pathlib import Path
-          idx = Path("startos/versions/index.ts").read_text()
-          var = re.search(r"current:\s*(\w+)", idx).group(1)
-          imp = re.search(rf"import \{{\s*{re.escape(var)}\s*\}} from '([^']+)'", idx)
-          ver = re.search(
-              r"version:\s*'([^']+)'",
-              Path("startos/versions/" + imp.group(1).lstrip("./") + ".ts").read_text(),
-          ).group(1)
-          print("v" + ver.split(":", 1)[0])
-          PY
-          )
+          CURRENT="v$(sed -nE "s/^[[:space:]]*version:[[:space:]]*'([^:']+):.*/\1/p" startos/versions/current.ts | head -1)"
 
           if [ "$LATEST" = "$CURRENT" ]; then
             echo "Already at $LATEST — no update"
             exit 0
           fi
 
+          if git ls-remote --exit-code --heads origin "auto-bump/$LATEST" >/dev/null; then
+            echo "A bump PR for $LATEST is already open — nothing to do"
+            exit 0
+          fi
+
           echo "Updating $CURRENT -> $LATEST"
           bash scripts/auto-bump.sh "$LATEST"
-          # GITHUB_TOKEN pushes do not trigger Tag and Release. Dispatch it
-          # so the bumped tree is built and published, not just versioned.
-          gh workflow run tagAndRelease.yml
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash

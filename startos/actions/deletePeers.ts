@@ -27,7 +27,8 @@ export const deletePeers = sdk.Action.withoutInput(
     return {
       version: '1' as const,
       title: 'Peer List Deleted',
-      message: 'peers.dat has been removed. The node will rebuild it from DNS seeds on next startup.',
+      message:
+        'peers.dat has been removed. The node will rebuild it from DNS seeds on next startup.',
       result: null,
     }
   },

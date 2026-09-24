@@ -1,7 +1,13 @@
 import { sdk } from './sdk'
 import {
-  rpcInterfaceId, peerInterfaceId, zmqInterfaceId,
-  networkPorts, zmqPort, zmqPortTx, zmqPortDspHash, zmqPortDspRaw,
+  rpcInterfaceId,
+  peerInterfaceId,
+  zmqInterfaceId,
+  networkPorts,
+  zmqPort,
+  zmqPortTx,
+  zmqPortDspHash,
+  zmqPortDspRaw,
   Network,
 } from './utils'
 import { bitcoinConfFile } from './fileModels/bitcoin.conf'
@@ -10,8 +16,9 @@ import { storeJson } from './fileModels/store.json'
 export const setInterfaces = sdk.setupInterfaces(async ({ effects }) => {
   const bitcoinConf = await bitcoinConfFile.read().const(effects)
 
-  // Reactive: RPC/P2P ports move with the chain. `.once()` left the previous
-  // network's ports advertised after a switch (Start9-Community #8).
+  // Reactive, and load-bearing: the RPC and P2P ports move with the chain, so a
+  // `.once()` read here leaves the old chain's ports bound after a switch.
+  // Mapped to the chain alone so the other `store.json` writes don't re-run it.
   const network: Network =
     (await storeJson.read((s) => s.network).const(effects)) ?? 'mainnet'
   const { rpc: rpcPort, peer: peerPort } = networkPorts[network]
@@ -48,7 +55,8 @@ export const setInterfaces = sdk.setupInterfaces(async ({ effects }) => {
   const peer = sdk.createInterface(effects, {
     name: 'Peer Interface',
     id: peerInterfaceId,
-    description: 'Listens for incoming connections from peers on the bitcoin cash network',
+    description:
+      'Listens for incoming connections from peers on the bitcoin cash network',
     type: 'p2p',
     masked: false,
     schemeOverride: { ssl: null, noSsl: null },
@@ -70,7 +78,8 @@ export const setInterfaces = sdk.setupInterfaces(async ({ effects }) => {
     const zmq = sdk.createInterface(effects, {
       name: 'ZeroMQ Interface',
       id: zmqInterfaceId,
-      description: 'Streams real-time block and transaction notifications (hashes and raw data)',
+      description:
+        'Streams real-time block and transaction notifications (hashes and raw data)',
       type: 'api',
       masked: false,
       schemeOverride: null,

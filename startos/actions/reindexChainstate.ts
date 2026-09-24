@@ -14,7 +14,10 @@ export const reindexChainstate = sdk.Action.withoutInput(
     visibility: 'enabled' as const,
   }),
   async ({ effects }) => {
-    await storeJson.merge(effects, { reindexChainstate: true, fullySynced: false })
+    await storeJson.merge(effects, {
+      reindexChainstate: true,
+      fullySynced: false,
+    })
     await effects.restart()
     return null
   },
