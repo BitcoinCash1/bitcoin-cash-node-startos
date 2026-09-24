@@ -8,7 +8,14 @@ export const shape = z
     txindex: z.boolean().catch(true),
     zmqEnabled: z.boolean().catch(true),
     network: z
-      .enum(['mainnet', 'testnet3', 'testnet4', 'scalenet', 'chipnet', 'regtest'])
+      .enum([
+        'mainnet',
+        'testnet3',
+        'testnet4',
+        'scalenet',
+        'chipnet',
+        'regtest',
+      ])
       .catch('mainnet'),
     initialized: z.boolean().catch(false),
     reindexBlockchain: z.boolean().catch(false),

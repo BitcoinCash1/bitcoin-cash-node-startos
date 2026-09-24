@@ -1,5 +1,13 @@
+import { socksHostId, socksPort } from 'tor-startos/startos/utils'
 import { sdk } from './sdk'
-import { rootDir, networkPorts, networkFlag, Network, GetBlockchainInfo, GetPeerInfo } from './utils'
+import {
+  rootDir,
+  networkPorts,
+  networkFlag,
+  Network,
+  GetBlockchainInfo,
+  GetPeerInfo,
+} from './utils'
 import { bitcoinConfFile } from './fileModels/bitcoin.conf'
 import { storeJson } from './fileModels/store.json'
 import { mainMounts } from './mounts'
@@ -10,11 +18,6 @@ export const main = sdk.setupMain(async ({ effects }) => {
   /**
    * ======================== Setup ========================
    */
-
-  // Re-write bitcoin.conf on every startup to strip any legacy top-level
-  // rpcbind/rpcallowip entries (BCHN rejects those when running chipnet/regtest).
-  // They are passed as CLI args below instead.
-  await bitcoinConfFile.merge(effects, {})
 
   // Read bitcoin.conf (watch for changes — restarts on change)
   const bitcoinConf = await bitcoinConfFile.read().const(effects)
@@ -34,24 +37,42 @@ export const main = sdk.setupMain(async ({ effects }) => {
   const reindexBlockchain = store?.reindexBlockchain ?? false
   const reindexChainstate = store?.reindexChainstate ?? false
   if (reindexBlockchain || reindexChainstate) {
-    await storeJson.merge(effects, { reindexBlockchain: false, reindexChainstate: false })
-  }
-
-  // Tor — get container IP (restarts if it changes)
-  const torIp = await sdk.getContainerIp(effects, { packageId: 'tor' }).const()
-
-  // Track Tor running status dynamically
-  let torRunning = false
-  if (torIp) {
-    sdk.getStatus(effects, { packageId: 'tor' }).onChange((status) => {
-      torRunning = status?.desired.main === 'running'
-      return { cancel: false }
+    await storeJson.merge(effects, {
+      reindexBlockchain: false,
+      reindexChainstate: false,
     })
   }
 
-  const onlynetList: string[] = ([
-    (bitcoinConf?.onlynet as string[] | string | undefined) ?? [],
-  ] as string[][]).flat().filter(Boolean)
+  // Tor SOCKS over the bridge. The bridge address only changes when tor's
+  // binding does — with the 9050 fallback it stays constant across tor
+  // install/update/uninstall, so this .const() never restarts BCHN unless tor
+  // lands on a different port (then one healing restart). A dead bridge
+  // address is just connection-refused, so -onion is always safe to pass.
+  const torSocks = await sdk.host
+    .getBridgeAddress(effects, {
+      packageId: 'tor',
+      hostId: socksHostId,
+      internalPort: socksPort,
+      fallbackPort: socksPort,
+    })
+    .const()
+
+  // Track Tor install/run state dynamically for the health check (no restart)
+  let torInstalled = false
+  let torRunning = false
+  sdk.getStatus(effects, { packageId: 'tor' }).onChange((status) => {
+    torInstalled = status !== null
+    torRunning = status?.desired.main === 'running'
+    return { cancel: false }
+  })
+
+  const onlynetList: string[] = (
+    [
+      (bitcoinConf?.onlynet as string[] | string | undefined) ?? [],
+    ] as string[][]
+  )
+    .flat()
+    .filter(Boolean)
   const onlynetActive = onlynetList.length > 0
 
   const externalip: (string | undefined)[] =
@@ -78,30 +99,24 @@ export const main = sdk.setupMain(async ({ effects }) => {
     `-rpcbind=0.0.0.0`,
     '-rpcallowip=0.0.0.0/0',
     ...(netFlag ? [netFlag] : []),
-    ...(torIp
-      ? [
-          `-onion=${torIp}:9050`,
-          '-listenonion=0',
-          ...(torOnly ? [`-proxy=${torIp}:9050`, '-dnsseed=0', '-dns=0'] : []),
-        ]
-      : []),
+    `-onion=${torSocks}`,
+    '-listenonion=0',
+    ...(torOnly ? [`-proxy=${torSocks}`, '-dnsseed=0', '-dns=0'] : []),
     ...(reindexBlockchain ? ['-reindex'] : []),
     ...(reindexChainstate ? ['-reindex-chainstate'] : []),
   ]
 
-  const nodeSub = await sdk.SubContainer.of(
+  const nodeSub = sdk.SubContainer.of(
     effects,
     { imageId: 'bitcoin-cash-node' },
     mainMounts,
     'node-sub',
   )
 
-  // Helper: run JSON-RPC call via bitcoin-cli.
-  // The exec spawns a fresh subcontainer each call. Under host mount-namespace
-  // pressure that spawn can transiently fail ("/proc/1/ns/pid: No such file")
-  // even while bitcoind + RPC are perfectly healthy — which previously left the
-  // "RPC" / sync / peer health checks stuck on "starting" (looked like a crash).
-  // Retry the spawn a few times so those transients don't surface to the UI.
+  // Helper: run JSON-RPC call via bitcoin-cli. Each call spawns a process in
+  // the subcontainer, and under host load that spawn can fail transiently
+  // while bitcoind is healthy, which left the health checks stuck on
+  // "Starting". Retry the spawn a few times before reporting a failure.
   async function rpcCall(method: string, ...params: unknown[]) {
     const args = [
       'bitcoin-cli',
@@ -141,16 +156,28 @@ export const main = sdk.setupMain(async ({ effects }) => {
           try {
             const mkdirRes = await nodeSub.exec(['mkdir', '-p', rootDir])
             if (mkdirRes.exitCode !== 0) {
-              console.warn(`nocow: mkdir failed for ${rootDir}; continuing without chattr`)
+              console.warn(
+                `nocow: mkdir failed for ${rootDir}; continuing without chattr`,
+              )
               return null
             }
 
-            const chattrRes = await nodeSub.exec(['chattr', '-R', '+C', rootDir])
+            const chattrRes = await nodeSub.exec([
+              'chattr',
+              '-R',
+              '+C',
+              rootDir,
+            ])
             if (chattrRes.exitCode !== 0) {
-              console.warn(`nocow: chattr not applied for ${rootDir}; continuing startup`)
+              console.warn(
+                `nocow: chattr not applied for ${rootDir}; continuing startup`,
+              )
             }
           } catch (err) {
-            console.warn('nocow: unable to set NoCOW attributes; continuing startup', err)
+            console.warn(
+              'nocow: unable to set NoCOW attributes; continuing startup',
+              err,
+            )
           }
           return null
         },
@@ -161,6 +188,8 @@ export const main = sdk.setupMain(async ({ effects }) => {
       subcontainer: nodeSub,
       exec: {
         command: ['bitcoind', ...daemonArgs],
+        // BCHN flushes its databases on exit; a shorter timeout corrupts
+        // chainstate on a slow disk.
         sigtermTimeout: 300_000,
       },
       ready: {
@@ -170,9 +199,15 @@ export const main = sdk.setupMain(async ({ effects }) => {
             const res = await rpcCall('getrpcinfo')
             return res.exitCode === 0
               ? { message: 'BCHN RPC Interface is ready', result: 'success' }
-              : { message: 'The BCHN RPC Interface is not ready', result: 'starting' }
+              : {
+                  message: 'The BCHN RPC Interface is not ready',
+                  result: 'starting',
+                }
           } catch {
-            return { message: 'The BCHN RPC Interface is not ready', result: 'starting' }
+            return {
+              message: 'The BCHN RPC Interface is not ready',
+              result: 'starting',
+            }
           }
         },
       },
@@ -181,15 +216,26 @@ export const main = sdk.setupMain(async ({ effects }) => {
     .addHealthCheck('sync-progress', {
       ready: {
         display: 'Blockchain Sync',
+        trigger: sdk.trigger.statusTrigger(30_000, {
+          starting: 5_000,
+          failure: 5_000,
+        }),
         fn: async () => {
           try {
             const res = await rpcCall('getblockchaininfo')
-            if (res.exitCode !== 0) return { message: 'Waiting for sync info', result: 'loading' }
+            if (res.exitCode !== 0)
+              return { message: 'Waiting for sync info', result: 'loading' }
             const stdout = res.stdout.toString()
             const info: GetBlockchainInfo = JSON.parse(stdout)
-            if (info.initialblockdownload) {
-              const pct = (info.verificationprogress * 100).toFixed(2)
-              return { message: `Syncing blocks... ${pct}% (${netLabel})`, result: 'loading' }
+            const pct = info.verificationprogress * 100
+            // Only "syncing" while genuinely behind. On regtest (and a node at
+            // the tip) initialblockdownload can stay true with verificationprogress
+            // already at 1.0 — reporting "Syncing 100%" there is nonsense.
+            if (info.initialblockdownload && pct < 99.99) {
+              return {
+                message: `Syncing blocks...${pct.toFixed(2)}% (${netLabel})`,
+                result: 'loading',
+              }
             }
             return {
               message: `Synced — block ${info.blocks}${info.pruned ? ' (pruned)' : ''} (${netLabel})`,
@@ -218,17 +264,34 @@ export const main = sdk.setupMain(async ({ effects }) => {
     .addHealthCheck('peer-connections', {
       ready: {
         display: 'Peer Connections',
+        trigger: sdk.trigger.statusTrigger(30_000, {
+          starting: 5_000,
+          failure: 5_000,
+        }),
         fn: async () => {
           try {
             const res = await rpcCall('getpeerinfo')
-            if (res.exitCode !== 0) return { message: 'Unable to query peers', result: 'loading' }
+            if (res.exitCode !== 0)
+              return { message: 'Unable to query peers', result: 'loading' }
             const stdout = res.stdout.toString()
             const peers: GetPeerInfo = JSON.parse(stdout)
             const count = peers.length
-            if (count === 0) return { message: 'No peers connected — node may be starting up or isolated', result: 'loading' }
-            if (count < 3) return { message: `Only ${count} peer(s) connected — network connectivity may be limited`, result: 'loading' }
+            if (count === 0)
+              return {
+                message:
+                  'No peers connected — node may be starting up or isolated',
+                result: 'loading',
+              }
+            if (count < 3)
+              return {
+                message: `Only ${count} peer(s) connected — network connectivity may be limited`,
+                result: 'loading',
+              }
             const inbound = peers.filter((p) => p.inbound).length
-            return { message: `${count} peers (${count - inbound} outbound, ${inbound} inbound)`, result: 'success' }
+            return {
+              message: `${count} peers (${count - inbound} outbound, ${inbound} inbound)`,
+              result: 'success',
+            }
           } catch {
             return { message: 'Unable to query peers', result: 'loading' }
           }
@@ -240,9 +303,18 @@ export const main = sdk.setupMain(async ({ effects }) => {
       ready: {
         display: 'Tor',
         fn: () => {
-          if (!torIp) return { result: 'disabled' as const, message: 'Tor is not installed' }
-          if (!torRunning) return { result: 'disabled' as const, message: 'Tor is not running' }
-          if (onlynetActive && !onlynetList.includes('onion')) return excludedByOnlynet()
+          if (!torInstalled)
+            return {
+              result: 'disabled' as const,
+              message: 'Tor is not installed',
+            }
+          if (!torRunning)
+            return {
+              result: 'disabled' as const,
+              message: 'Tor is not running',
+            }
+          if (onlynetActive && !onlynetList.includes('onion'))
+            return excludedByOnlynet()
           return {
             result: 'success' as const,
             message: externalip.some((ip) => ip?.includes('.onion'))
@@ -253,21 +325,15 @@ export const main = sdk.setupMain(async ({ effects }) => {
       },
       requires: [],
     })
-    .addHealthCheck('i2p', {
-      ready: {
-        display: 'I2P',
-        fn: () => ({
-          result: 'disabled' as const,
-          message: 'I2P support is not implemented yet.',
-        }),
-      },
-      requires: [],
-    })
     .addHealthCheck('clearnet', {
       ready: {
         display: 'Clearnet',
         fn: () => {
-          if (onlynetActive && !onlynetList.includes('ipv4') && !onlynetList.includes('ipv6'))
+          if (
+            onlynetActive &&
+            !onlynetList.includes('ipv4') &&
+            !onlynetList.includes('ipv6')
+          )
             return excludedByOnlynet()
           return {
             result: 'success' as const,

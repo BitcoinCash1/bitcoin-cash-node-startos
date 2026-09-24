@@ -1,12 +1,13 @@
 {
-  "name": "bitcoin-cash-node",
+  "name": "bitcoin-cash-node-startos",
   "scripts": {
     "build": "rm -rf ./javascript && ncc build startos/index.ts -o ./javascript",
     "prettier": "prettier --write startos",
     "check": "tsc --noEmit"
   },
   "dependencies": {
-    "@start9labs/start-sdk": "2.0.9"
+    "@start9labs/start-sdk": "2.0.9",
+    "tor-startos": "github:Start9Labs/tor-startos#next"
   },
   "devDependencies": {
     "@types/node": "^22.19.0",

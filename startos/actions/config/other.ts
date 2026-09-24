@@ -5,7 +5,8 @@ export const otherConfig = sdk.Action.withInput(
   'other-config',
   async ({ effects: _effects }) => ({
     name: 'Node Settings',
-    description: 'Indexes, pruning, ZeroMQ, mempool persistence, performance cache, and advanced options.',
+    description:
+      'Indexes, pruning, ZeroMQ, mempool persistence, performance cache, and advanced options.',
     warning: null,
     allowedStatuses: 'any' as const,
     group: 'Configuration',

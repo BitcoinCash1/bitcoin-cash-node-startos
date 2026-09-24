@@ -27,7 +27,8 @@ export const deleteTxIndex = sdk.Action.withoutInput(
     return {
       version: '1' as const,
       title: 'Transaction Index Deleted',
-      message: 'indexes/txindex has been removed. Enable txindex and restart to rebuild.',
+      message:
+        'indexes/txindex has been removed. Enable txindex and restart to rebuild.',
       result: null,
     }
   },

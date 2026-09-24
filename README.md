@@ -4,15 +4,15 @@
 
 # Bitcoin Cash Node on StartOS
 
-> **Upstream docs:** <https://docs.bitcoincashnode.org/>
->
 > Everything not listed in this document should behave the same as upstream
 > Bitcoin Cash Node. If a feature, setting, or behavior is not mentioned here,
-> the upstream documentation is accurate and fully applicable.
+> the upstream documentation is accurate and fully applicable — see the
+> Documentation section of `instructions.md` for links.
 
-Bitcoin Cash Node (BCHN) is the reference C++ implementation of the Bitcoin Cash protocol — a full node that downloads, verifies, and relays the entire BCH blockchain. See the [upstream project](https://gitlab.com/bitcoin-cash-node/bitcoin-cash-node) for general BCHN documentation.
+[Bitcoin Cash Node](https://gitlab.com/bitcoin-cash-node/bitcoin-cash-node) (BCHN) is the reference C++ implementation of the Bitcoin Cash protocol — a full node that downloads, verifies, and relays the entire BCH chain. This package runs it on any of six networks, publishes its RPC and ZeroMQ streams for dependent services, and manages RPC credentials as hashed `rpcauth` entries rather than a shared password.
 
-This package wraps **BCHN v29.1.0**, which implements the May 15, 2026 network upgrade (P2S32, native loops, functions, bitwise opcodes). Nodes running v28.x stop following the main chain after that upgrade activates.
+- **Upstream repo:** <https://gitlab.com/bitcoin-cash-node/bitcoin-cash-node>
+- **Wrapper repo:** <https://github.com/Start9-Community/bitcoin-cash-node-startos>
 
 ---
 
@@ -20,247 +20,281 @@ This package wraps **BCHN v29.1.0**, which implements the May 15, 2026 network u
 
 - [Image and Container Runtime](#image-and-container-runtime)
 - [Volume and Data Layout](#volume-and-data-layout)
-- [Installation and First-Run Flow](#installation-and-first-run-flow)
-- [Default Networking](#default-networking)
-- [Configuration Management](#configuration-management)
-- [Network Access and Interfaces](#network-access-and-interfaces)
-- [Actions (StartOS UI)](#actions-startos-ui)
-- [Backups and Restore](#backups-and-restore)
-- [Health Checks](#health-checks)
+- [File Models](#file-models)
 - [Dependencies](#dependencies)
-- [Default Overrides](#default-overrides)
+- [Network Access and Interfaces](#network-access-and-interfaces)
+- [Installation and First-Run Flow](#installation-and-first-run-flow)
+- [Actions](#actions)
+- [Tasks](#tasks)
+- [Health Checks](#health-checks)
+- [Backups and Restore](#backups-and-restore)
 - [Limitations and Differences](#limitations-and-differences)
-- [What Is Unchanged from Upstream](#what-is-unchanged-from-upstream)
-- [Contributing](#contributing)
+- [Upstream Updates](#upstream-updates)
 - [Quick Reference for AI Consumers](#quick-reference-for-ai-consumers)
 
 ---
 
 ## Image and Container Runtime
 
-| Property      | Value                                            |
-| ------------- | ------------------------------------------------ |
-| Image         | `mainnet/bitcoin-cash-node:v29.1.0` (Docker Hub) |
-| Architectures | x86_64, aarch64 (aarch64 emulated as x86_64)     |
-| Command       | `bitcoind` with StartOS-managed flags            |
+One upstream image, consumed unmodified.
 
-The pre-built upstream BCHN image ships `bitcoind` and `bitcoin-cli`, plus ZMQ support. No Dockerfile is built; the image is pulled by digest at pack time.
+| Property      | Value                                                           |
+| ------------- | --------------------------------------------------------------- |
+| Image         | `mainnet/bitcoin-cash-node`                                     |
+| Architectures | x86_64, aarch64 — with aarch64 falling back to emulated x86_64  |
+| Command       | `bitcoind`, with the network-dependent settings passed as flags |
+
+| Subcontainer | Purpose                                                                       |
+| ------------ | ----------------------------------------------------------------------------- |
+| `node-sub`   | The `bitcoind` daemon — the one to `attach` to, and where `bitcoin-cli` lives |
+
+`emulateMissingAs: 'x86_64'` means an ARM board runs the x86_64 image under emulation when no native one is published. It works, and it is markedly slower than a native build — worth knowing before diagnosing a slow sync on ARM.
+
+**The daemon is given 5 minutes to shut down.** `sigtermTimeout` is set to 300 seconds because BCHN flushes its databases on exit, and killing it mid-flush is how a chainstate gets corrupted. A stop that appears to hang is usually this working correctly.
 
 ## Volume and Data Layout
 
-| Volume | Mount Point | Purpose                                            |
-| ------ | ----------- | -------------------------------------------------- |
-| `main` | `/data`     | All BCHN data (blockchain, config, wallets, peers) |
+One volume, holding the chain and everything else.
 
-StartOS-specific files on the `main` volume:
+| Volume | Mount Point | Purpose                                                    |
+| ------ | ----------- | ---------------------------------------------------------- |
+| `main` | `/data`     | Blockchain, chainstate, indexes, config, and package state |
 
-| File           | Purpose                                                                    |
-| -------------- | -------------------------------------------------------------------------- |
-| `bitcoin.conf` | INI config written from the configuration actions                         |
-| `store.json`   | Persistent StartOS state (RPC credentials, network, reindex/sync flags)    |
+| Path                       | Written by  | Holds                                        |
+| -------------------------- | ----------- | -------------------------------------------- |
+| `bitcoin.conf`             | The package | Node configuration, including `rpcauth`      |
+| `store.json`               | The package | Chain selection, credentials, one-shot flags |
+| `blocks/`, `chainstate/`   | BCHN        | The chain and the UTXO set                   |
+| `indexes/txindex/`         | BCHN        | The transaction index                        |
+| `peers.dat`, `banlist.dat` | BCHN        | Peer and ban state                           |
 
-Blockchain data (`blocks/`, `chainstate/`, `indexes/`) resides on the `main` volume alongside `bitcoin.conf`, `peers.dat`, and wallet data.
+The volume is marked NoCOW (`chattr +C`) on first start. That matters on btrfs, where copy-on-write plus a blockchain's sequential append pattern fragments the filesystem badly. It is applied best-effort: a filesystem that does not support it logs a warning and start-up continues.
 
-## Installation and First-Run Flow
+## File Models
 
-1. On install, StartOS sets the `nocow` attribute on the data directory (btrfs optimization via `chattr -R +C`).
-2. `store.json` and `bitcoin.conf` are seeded. A random 32-character RPC password is generated; `dbcache` is sized to 25% of system RAM (capped at 5120 MB); `txindex`, ZeroMQ, and mempool persistence are enabled by default.
-3. BCHN begins syncing the full BCH blockchain (Initial Block Download). A full IBD takes several hours to a few days depending on hardware, disk, and network speed.
-4. Dependent services (Fulcrum BCH, BCH Explorer, mining pools) install, connect, and configure themselves automatically via the hidden **Auto-Configure** action.
+Two models. `bitcoin.conf` is upstream's own configuration file; `store.json` is what only StartOS knows.
 
-## Default Networking
+| File           | Format | Modelled                | Written by                     |
+| -------------- | ------ | ----------------------- | ------------------------------ |
+| `bitcoin.conf` | INI    | Yes — `FileHelper.ini`  | Install and the config actions |
+| `store.json`   | JSON   | Yes — `FileHelper.json` | Install, actions, and `main`   |
 
-Out of the box, BCHN connects to the Bitcoin Cash network over clearnet with no user configuration required. When the **Tor** service is installed, outbound peer connections are additionally routed over Tor.
+**`bitcoin.conf` is modelled loosely on purpose.** The schema names the keys the package manages, but unknown keys are preserved rather than stripped — so a setting added by hand for something the actions do not cover survives a config action rewriting its neighbours. The keys the package _does_ name are its own, and an action that touches one overwrites it.
 
-| Transport     | Default                                    | Inbound                                       | How to change                                       |
-| ------------- | ------------------------------------------ | --------------------------------------------- | --------------------------------------------------- |
-| **IPv4/IPv6** | Enabled (clearnet peer discovery)          | No (no `externalip` advertised)               | Publish an IP address on the Peer interface          |
-| **Tor**       | Outbound via StartOS Tor proxy (`-onion`)  | No (no onion address advertised)              | Add an onion address on the Peer interface           |
+INI parsing returns strings, and a duplicated key returns an array. The model coerces both: a numeric field accepts `"450"`, a boolean accepts `"1"`, and where a key legitimately repeats — `rpcauth`, `onlynet`, `externalip`, `addnode` — it is modelled as a list.
 
-Set **RPC & Peers Settings → Allowed Networks** to **Tor (.onion)** only to run a fully Tor-only node — BCHN is then started with `-proxy`, `-dnsseed=0`, and `-dns=0` so no clearnet lookups leak. In that mode you must add at least one `.onion` peer under **Add Peers**.
+**RPC access is `rpcauth`, not a shared password.** Each credential is stored as `username:salt$hmac`, so the password itself is never in the config file and is shown exactly once, when generated. The consequence is that there is no way to recover a lost password — only to generate a replacement for that username, which the action does by removing the old entry first.
 
-BCHN's automatic onion-listen feature (`-listenonion`) requires a TCP Tor control port (9051), which the StartOS Tor service does not expose (it offers a Unix control socket only). `-listenonion=0` is therefore set unconditionally; for inbound onion connectivity, add an onion service on the Peer interface instead.
+**`store.json`** carries the selected network, the initial RPC user and password, the ZeroMQ and index toggles, and the one-shot reindex flags. `main` clears a reindex flag as it consumes it, so a reindex happens once rather than on every start.
 
-## Configuration Management
-
-BCHN is configured through **StartOS actions** that write to `bitcoin.conf` (INI format) on the `main` volume. Four actions in the **Configuration** group cover all user-facing settings:
-
-| Action                    | Settings                                                                                              |
-| ------------------------- | ----------------------------------------------------------------------------------------------------- |
-| **Network**               | Network selection (mainnet / testnet3 / testnet4 / scalenet / chipnet / regtest)                      |
-| **Node Settings**         | txindex, prune, ZeroMQ, mempool persistence, dbcache, dbbatchsize, blocknotify, wallet files          |
-| **RPC & Peers Settings**  | RPC timeout/threads/workqueue, max connections, max upload target, bloom filters, allowed networks, peers |
-| **Mempool & Block Policy**| max mempool, min relay fee, mempool expiry, excessive block size, ancestor/descendant limits          |
-
-Selecting a network switches the data directory and the RPC/P2P port set automatically. The advertised RPC/P2P bindings follow `store.network` reactively (a `.once()` read used to leave the previous network's ports registered). Enabling pruning forces `txindex` off (the two are incompatible). Double Spend Proof (DSP) relay is always forced on.
-
-Settings that are always managed by StartOS (not user-editable):
-
-| Setting      | Value         | Reason                                            |
-| ------------ | ------------- | ------------------------------------------------- |
-| `server`     | `1`           | RPC server always on                              |
-| `listen`     | `1`           | Always accepting peer connections                 |
-| `rpcbind`    | `0.0.0.0`     | RPC reachable by dependent containers             |
-| `rpcallowip` | `0.0.0.0/0`   | RPC reachable by dependent containers             |
-| `-onion`     | `<torIp>:9050`| StartOS Tor proxy (set at runtime when Tor is up) |
-
-## Network Access and Interfaces
-
-Ports adjust automatically to the selected network. Mainnet defaults:
-
-| Interface | Port  | Protocol | Purpose                                   | Condition        |
-| --------- | ----- | -------- | ----------------------------------------- | ---------------- |
-| RPC       | 8332  | HTTP     | JSON-RPC commands                         | Always           |
-| Peer      | 8333  | TCP      | BCH peer-to-peer connections              | Always           |
-| ZeroMQ    | 28332 | TCP      | Block notifications (rawblock, hashblock) | When ZMQ enabled |
-| ZeroMQ    | 28333 | TCP      | Tx notifications (rawtx, hashtx)          | When ZMQ enabled |
-| ZMQ DSP   | 28334 | TCP      | Double Spend Proof hash notifications     | Always           |
-| ZMQ DSP   | 28335 | TCP      | Double Spend Proof raw-tx notifications   | Always           |
-
-RPC/P2P ports per network: testnet3 `18332/18333`, testnet4 `28342/28343`, scalenet `38332/38333`, chipnet `48332/48333`, regtest `18443/18444`. (testnet4's BCHN-default RPC/P2P ports collide with the ZMQ range and are remapped to `28342/28343`.)
-
-## Actions (StartOS UI)
-
-### Configuration
-
-| Action                     | Purpose                                       | Availability |
-| -------------------------- | --------------------------------------------- | ------------ |
-| **Network**                | Select the Bitcoin Cash network               | Any          |
-| **Node Settings**          | Indexes, pruning, ZMQ, performance, advanced  | Any          |
-| **RPC & Peers Settings**   | RPC tuning, peer connections, network limits  | Any          |
-| **Mempool & Block Policy** | Mempool size, relay fees, block policy        | Any          |
-
-### Info
-
-| Action        | Purpose                                                           | Availability |
-| ------------- | ----------------------------------------------------------------- | ------------ |
-| **Node Info** | Version, network, connections, and sync status from live RPC      | Running only |
-
-### Credentials
-
-| Action                       | Purpose                                                       | Availability |
-| ---------------------------- | ------------------------------------------------------------- | ------------ |
-| **View RPC Credentials**     | Show username, password, and RPC port for a selected credential | Any        |
-| **Generate RPC Credentials** | Create a new `rpcauth` entry for an external service          | Any          |
-| **Delete RPC Users**         | Remove existing `rpcauth` entries                             | Any          |
-
-### Maintenance
-
-| Action                       | Purpose                                                         | Availability |
-| ---------------------------- | --------------------------------------------------------------- | ------------ |
-| **Reindex Blockchain**       | Re-verify every block from genesis (rebuilds index + chainstate)| Any          |
-| **Reindex Chainstate**       | Rebuild the UTXO chainstate from existing block files           | Any          |
-| **Delete Peer List**         | Delete a corrupted `peers.dat`                                  | Stopped only |
-| **Delete Transaction Index** | Delete a corrupted txindex                                      | Stopped only |
-| **Delete Test Network Data** | Free disk space by deleting block data for selected test networks (never touches mainnet; refuses the active network) | Any |
-
-### Hidden (Dependent Service Automation)
-
-| Action           | Purpose                                                          | Availability |
-| ---------------- | ---------------------------------------------------------------- | ------------ |
-| **Auto-Configure** | Prefill `bitcoin.conf` with the settings a dependent service needs | Any        |
-
-## Backups and Restore
-
-**Backed up:** the `main` volume, **excluding** `blocks/`, `chainstate/`, `indexes/`, `peers.dat`, `banlist.dat`, `fee_estimates.dat`, and `mempool.dat`.
-
-**What is backed up:** `bitcoin.conf`, `store.json` (RPC credentials), and wallet data.
-
-**What is NOT backed up:** blockchain data — it must be re-synced after a restore.
-
-**Restore warning:** restoring overwrites current configuration and wallet data.
-
-## Health Checks
-
-| Check                | Method                                  | Messages                                                                          |
-| -------------------- | --------------------------------------- | --------------------------------------------------------------------------------- |
-| **RPC**              | `bitcoin-cli getrpcinfo` (daemon ready) | "BCHN RPC Interface is ready"                                                      |
-| **Blockchain Sync**  | `bitcoin-cli getblockchaininfo`         | Percentage during IBD; "Synced — block N" when complete                           |
-| **Peer Connections** | `bitcoin-cli getpeerinfo`               | Connected peer count with inbound/outbound split; warns when fewer than 3 peers   |
-| **Tor**              | Tor install/running + onion address     | "Inbound and outbound" when an onion address is published; otherwise "Outbound only" |
-| **Clearnet**         | Published IP address check              | "Inbound and outbound" when an IP is published; otherwise "Outbound only"          |
+Five settings in `bitcoin.conf` are asserted by the package and not left to the user: `server`, `listen`, `rpcbind`, `rpcallowip`, and the ZeroMQ publisher addresses. StartOS decides reachability at the network layer, so binding the RPC narrowly inside the container would only prevent the OS from reaching it.
 
 ## Dependencies
 
-### Tor (optional, conditional)
+Tor, and **only when the configuration actually uses it**.
 
-| Property           | Value                                                              |
-| ------------------ | ----------------------------------------------------------------- |
-| Version constraint | `>= 0.4.9.5`                                                      |
-| Required state     | Running                                                           |
-| Health checks      | None                                                             |
-| Mounted volumes    | None                                                             |
-| Purpose            | Tor SOCKS proxy for outbound connections and onion advertisement |
+| Configuration                                                       | Tor dependency              |
+| ------------------------------------------------------------------- | --------------------------- |
+| An `.onion` external address is set, or onion is an allowed network | Required, `kind: 'running'` |
+| Neither                                                             | Not a dependency at all     |
 
-The dependency becomes **required** only when `externalip` contains a `.onion` address or `onlynet` includes `onion`. Otherwise Tor is entirely optional.
+The dependency is derived from the config rather than from a toggle, which means it appears and disappears as the user changes their networking. Tor exports no interface of its own, so the package resolves its SOCKS proxy over the internal bridge with a fallback that holds the address stable while Tor is absent.
 
-## Default Overrides
+That fallback is what makes it safe to pass `-onion` unconditionally: an unreachable proxy is a refused connection, not a start-up failure, and BCHN falls back to clearnet.
 
-Values seeded into `bitcoin.conf` / `store.json` on install:
+**Inbound onion comes from the Tor service, not from BCHN.** `-listenonion` is force-disabled, because BCHN would try to reach a Tor control port on TCP that the Tor package does not offer — it exposes a Unix socket instead. The onion address is published by attaching Tor to the Peer interface, which is the platform's own mechanism.
 
-| Setting          | Our Default                       | Reason                                                |
-| ---------------- | --------------------------------- | ----------------------------------------------------- |
-| `txindex`        | `1` (on)                          | Required by Fulcrum BCH and BCH Explorer              |
-| ZMQ block/tx     | `tcp://0.0.0.0:28332` / `:28333`  | Required by indexers and explorers                    |
-| ZMQ DSP          | `tcp://0.0.0.0:28334` / `:28335`  | Double Spend Proof streams (always on)                |
-| `doublespendproof` | `1` (on)                        | DSP relay always enabled                              |
-| `persistmempool` | `1` (on)                          | Reload mempool across restarts                        |
-| `maxconnections` | `125`                             | Upstream default, written explicitly                  |
-| `dbcache`        | 25% of system RAM (max 5120 MB)   | Faster IBD on machines with more RAM                  |
-| `rpcthreads`     | `4`                               | RPC concurrency for dependent services                |
-| `rpcworkqueue`   | `64`                              | RPC queue depth for dependent services                |
+## Network Access and Interfaces
+
+Three named interfaces, plus three ports bound without one.
+
+| Interface        | Id     | Type | Mainnet Port | Description                             |
+| ---------------- | ------ | ---- | ------------ | --------------------------------------- |
+| RPC Interface    | `rpc`  | api  | 8332         | JSON-RPC over HTTP                      |
+| Peer Interface   | `peer` | p2p  | 8333         | The Bitcoin Cash P2P network            |
+| ZeroMQ Interface | `zmq`  | api  | 28332        | Block notifications — only when enabled |
+
+| Port  | Stream                          | Bound                  |
+| ----- | ------------------------------- | ---------------------- |
+| 28332 | Raw and hashed **blocks**       | With the ZeroMQ toggle |
+| 28333 | Raw and hashed **transactions** | With the ZeroMQ toggle |
+| 28334 | Double Spend Proof hashes       | **Always**             |
+| 28335 | Double Spend Proof raw          | **Always**             |
+
+Only 28332 carries a named interface. The other three ports are bound so subscribers can reach them, but they show no entry on the service page — an agent looking for a "ZMQ transactions" address will not find one and should use the ZeroMQ interface's address with the port substituted.
+
+**The DSP streams are always on.** Double Spend Proof is a Bitcoin Cash feature with no equivalent elsewhere, and merchants' point-of-sale software depends on it, so it is not made optional.
+
+**RPC and P2P ports move with the chain:**
+
+| Network  | RPC   | Peer  |
+| -------- | ----- | ----- |
+| mainnet  | 8332  | 8333  |
+| testnet3 | 18332 | 18333 |
+| testnet4 | 28342 | 28343 |
+| scalenet | 38332 | 38333 |
+| chipnet  | 48332 | 48333 |
+| regtest  | 18443 | 18444 |
+
+**testnet4 is deliberately remapped.** BCHN's own defaults for it are 28332/28333, which are exactly the ZeroMQ block and transaction ports — so the package overrides them to 28342/28343. Anything documenting BCHN's stock testnet4 ports is describing a configuration this package does not run.
+
+## Installation and First-Run Flow
+
+Install generates a random RPC password, writes the initial `bitcoin.conf`, and sizes the database cache to the machine: 25% of system RAM, capped at 5 GB. There is no task and no wizard; the node starts syncing mainnet immediately.
+
+The defaults are chosen for a node that other services will use: the transaction index on, ZeroMQ on, mempool persistence on. That combination is what Fulcrum BCH, block explorers, and mining pools need, so a fresh install is usable by a dependent without reconfiguration.
+
+Start-up runs a oneshot first to create the data directory and apply the NoCOW attribute, then starts the daemon. Initial sync is the long part, and nothing about it needs attention beyond waiting.
+
+## Actions
+
+Fourteen actions in four groups, plus one hidden.
+
+### Node Info — ungrouped
+
+Reports version, network, connection counts, block height, and sync progress from the running node. Read-only, `only-running`, immediate.
+
+### Network — Configuration
+
+Switches which BCH chain the node runs: mainnet, testnet3, testnet4, scalenet, chipnet, or regtest.
+
+- **What it changes:** `network` in the store, and with it the RPC and P2P ports and the data directory in use.
+- **Cost:** restarts, and the newly selected chain syncs from scratch if it has no prior data.
+- **Repeat safety:** idempotent. Data for other chains is preserved, not deleted.
+- **What to expect:** the interfaces are rebuilt reactively, so the address on the service page changes port when you switch. A `.once()` read here would leave the old chain's ports bound — this is one of the few places in the package where the reactive read is load-bearing rather than convenient.
+
+### Node Settings — Configuration
+
+The transaction index, ZeroMQ, pruning, mempool persistence, and database performance.
+
+- **What it changes:** `bitcoin.conf`.
+- **Cost:** applies on the next start. Turning the transaction index on makes the next start rebuild it, which takes hours.
+- **Repeat safety:** idempotent.
+- **The one hard conflict:** pruning and the transaction index are mutually exclusive. Enabling pruning turns the index off, and anything depending on it — Fulcrum, an explorer — stops being able to look up arbitrary transactions.
+- **Turning ZeroMQ off removes an interface**, so a subscriber loses its address rather than getting an empty stream.
+
+### RPC & Peers Settings — Configuration
+
+Connection limits, allowed networks, external addresses, and added nodes.
+
+- **What it changes:** `bitcoin.conf`, and through it the Tor dependency: adding an `.onion` external address or restricting to onion makes Tor required.
+- **Restricting to onion alone changes more than routing.** The package then also routes _everything_ through SOCKS and disables DNS seeding and DNS resolution, so a clearnet seed lookup cannot leak the node's address. That is why onion-only is a meaningfully different mode rather than a filter.
+
+### Mempool & Block Policy — Configuration
+
+Mempool size and expiry, relay fee, and excessive block size. Writes `bitcoin.conf`; applies on the next start. The relay fee must be above 0, and the ancestor/descendant limit options are not offered: Bitcoin Cash Node removed them in 23.1.0 and refuses to start with either set, so any leftover value is stripped from `bitcoin.conf` on every write.
+
+### Credentials — three actions
+
+**View RPC Credentials** shows the initial credential. **Generate RPC Credentials** creates a new `rpcauth` entry for a named user. **Delete RPC Users** removes entries.
+
+- **A generated password is shown once and cannot be recovered.** Only the salted hash is stored. Re-generating for the same username replaces its entry, which invalidates the old password.
+- **Deletion takes effect on the next restart**, not immediately — the running daemon has the old set loaded.
+- All three are available at any status.
+
+### Maintenance — five actions
+
+| Action                   | Availability   | What it does                                        |
+| ------------------------ | -------------- | --------------------------------------------------- |
+| Reindex Blockchain       | any            | Re-verifies every block from genesis, then restarts |
+| Reindex Chainstate       | any            | Rebuilds the UTXO set from existing blocks          |
+| Delete Peer List         | `only-stopped` | Removes cached peers and the ban list               |
+| Delete Transaction Index | `only-stopped` | Removes the index so it rebuilds                    |
+| Delete Test Network Data | any            | Deletes data for selected test networks             |
+
+- **Reindex Blockchain is the expensive one** — hours to days, and it must not be interrupted. Reach for Reindex Chainstate first: it rebuilds only the UTXO set from blocks already on disk and is far quicker. Both set a one-shot flag and restart; the flag is cleared as it is consumed.
+- **Delete Transaction Index** is the targeted fix for a corrupted index. With the index still enabled, the next start rebuilds it, which takes hours but does not touch the chain.
+- **Delete Peer List** requires the service stopped, and the node rediscovers peers from DNS seeds afterwards.
+
+### Auto-Configure — hidden
+
+**Not user-facing.** It exists so a dependent package can raise a task that sets exactly the BCHN settings it needs, with those fields pre-filled and locked. A user encounters it as a task on this service's page, raised by another service — never as something to go and run.
+
+## Tasks
+
+None. This package raises no tasks, so the service is never held on a prompt and its ordinary controls are always available.
+
+## Health Checks
+
+Five checks. Two probe the node, and three report state that would otherwise be invisible.
+
+| Check              | Displayed as       | Method                                       |
+| ------------------ | ------------------ | -------------------------------------------- |
+| `primary`          | "RPC"              | `getrpcinfo` succeeds                        |
+| `sync-progress`    | "Blockchain Sync"  | `getblockchaininfo`                          |
+| `peer-connections` | "Peer Connections" | `getpeerinfo`, counting inbound and outbound |
+| `tor`              | "Tor"              | Tor's live package status plus the config    |
+| `clearnet`         | "Clearnet"         | Allowed networks plus advertised addresses   |
+
+**Sync is not reported from `initialblockdownload` alone.** A node at the tip — and regtest permanently — can report that flag true while verification progress is already complete, which would display a nonsensical "Syncing 100%". The check requires both the flag _and_ progress genuinely below completion before it says syncing.
+
+The sync and peer checks poll every 30 seconds normally and every 5 while starting or failing, so a node coming up reports progress quickly and a settled node costs little.
+
+**"Peer Connections" reports `loading`, not failure, below three peers.** A node that has just started legitimately has none, and being briefly under-connected is not a fault.
+
+**"Tor" and "Clearnet" both distinguish outbound-only from inbound-and-outbound** by whether a matching external address is advertised — an onion for the first, a public IP for the second. Either reports itself excluded when the allowed-networks setting rules it out, which is a configuration state rather than a failure. Tor additionally reports whether the Tor package is installed and running, tracked live so installing Tor changes the reading without restarting the node.
+
+## Backups and Restore
+
+The `main` volume is copied, with everything regenerable excluded:
+
+| Excluded                             | Why                         |
+| ------------------------------------ | --------------------------- |
+| `/blocks`, `/chainstate`, `/indexes` | Re-downloadable and derived |
+| `/peers.dat`, `/banlist.dat`         | Rediscovered from DNS seeds |
+| `/fee_estimates.dat`, `/mempool.dat` | Rebuilt from live traffic   |
+
+So the backup is the **configuration**, not the chain: `bitcoin.conf` with its `rpcauth` entries, and `store.json` with the chain selection and the initial credential.
+
+**A restored node re-syncs from scratch.** That is the deliberate trade — a backup measured in kilobytes rather than hundreds of gigabytes, at the cost of a full initial sync afterwards. Anything depending on this node's RPC is unusable until that completes, and if the transaction index is on it must rebuild as well.
+
+The `rpcauth` entries surviving is what stops a restore from breaking every dependent service and external wallet.
 
 ## Limitations and Differences
 
-1. **Pre-built upstream image** — pulls `mainnet/bitcoin-cash-node:v29.1.0` rather than building from source.
-2. **RPC bound to `0.0.0.0`** — so dependent StartOS containers (Fulcrum BCH, BCH Explorer) can reach the node; authentication is via the generated `rpcuser`/`rpcpassword` and any `rpcauth` entries.
-3. **Tor inbound is manual** — `-listenonion` is disabled because the StartOS Tor service exposes only a Unix control socket; use an onion service on the Peer interface for inbound onion connectivity.
-4. **DSP relay always on** — Double Spend Proof ZMQ streams (28334/28335) are always active regardless of the ZeroMQ toggle.
-5. **5-minute shutdown timeout** — SIGTERM allows 300 seconds for the database to flush; let it finish rather than force-stopping.
-6. **Blockchain data is not backed up** — only config, credentials, and wallets; block/chainstate data re-syncs after a restore.
-
-## What Is Unchanged from Upstream
-
-- Block validation and consensus rules
-- Peer-to-peer networking (gossip, block relay, transaction relay)
-- Wallet functionality (key management, signing, coin selection)
-- JSON-RPC API (all commands)
-- ZeroMQ notification interface
-- Transaction and block index behavior
-- Mempool policy
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for build instructions and development workflow.
+1. **Blockchain data is not backed up**, by design.
+2. **A generated RPC password cannot be recovered** — only the hash is stored. Generate a replacement instead.
+3. **Pruning and the transaction index are mutually exclusive**, and enabling pruning breaks anything that indexes this node.
+4. **testnet4 does not use BCHN's default ports**, because they collide with the ZeroMQ ports; they are remapped.
+5. **Only the block ZeroMQ port carries a named interface.** The transaction and DSP ports are bound but do not appear on the service page.
+6. **Inbound onion is published by the Tor service**, not by BCHN — `-listenonion` is disabled because the Tor package offers no TCP control port.
+7. **On ARM the image may run emulated**, which is substantially slower than a native build.
+8. **RPC is bound to all interfaces inside the container** and allows any source. Reachability is StartOS's decision, not the daemon's.
 
 ---
+
+## Upstream Updates
+
+`check-upstream.yml` looks for a new Bitcoin Cash Node release on GitLab daily. When one appears, `scripts/auto-bump.sh` sets `startos/versions/current.ts` to `<upstream>:0`, resets `ALLOW_DOWNGRADE` to `false`, updates the image tag in the manifest and the version in the store description, and opens a pull request from `auto-bump/<tag>`. Nothing reaches `master` until that PR is reviewed and merged; merging it is what releases the new version. Package-only fixes bump the revision after the colon by hand in their own PR.
 
 ## Quick Reference for AI Consumers
 
 ```yaml
-package_id: bitcoincashd
-image: mainnet/bitcoin-cash-node:v29.1.0
-architectures: [x86_64, aarch64]
+package_id: bitcoincashd # note: the title is "Bitcoin Cash Node (BCHN)"
+image: mainnet/bitcoin-cash-node
+architectures:
+  - x86_64
+  - aarch64 # emulateMissingAs: x86_64
+subcontainers:
+  - node-sub
 volumes:
   main: /data
-ports:
-  rpc: 8332
-  peer: 8333
-  zmq-block: 28332 (conditional)
-  zmq-tx: 28333 (conditional)
-  zmq-dsp-hash: 28334
-  zmq-dsp-raw: 28335
-dependencies:
-  tor: conditional (onion connectivity)
-startos_managed_files:
+file_models:
   - bitcoin.conf
   - store.json
+startos_managed_env_vars: [] # settings are passed as bitcoind flags
+dependencies:
+  - tor # required only when an .onion externalip or onion-only is configured
+interfaces:
+  rpc: { type: api, port: 8332 }
+  peer: { type: p2p, port: 8333 }
+  zmq: { type: api, port: 28332 } # blocks; exported only when ZeroMQ is enabled
 actions:
+  - runtime-info
   - network-config
   - other-config
   - peers-config
   - mempool-config
-  - runtime-info
   - view-credentials
   - generate-rpc-user
   - delete-rpc-user
@@ -269,14 +303,12 @@ actions:
   - delete-peers
   - delete-tx-index
   - delete-test-network-data
-  - autoconfig (hidden, dependent service automation)
+  - autoconfig # hidden; called by dependent packages
+tasks: []
 health_checks:
-  - rpc: bitcoin-cli getrpcinfo (daemon ready)
-  - sync-progress: bitcoin-cli getblockchaininfo
-  - peer-connections: bitcoin-cli getpeerinfo
-  - tor: install/running status + onion address check
-  - clearnet: published IP address check
-backup_volumes:
-  - main (excluding blocks/, chainstate/, indexes/, peers.dat, banlist.dat, fee_estimates.dat, mempool.dat)
+  - primary # displayed "RPC"
+  - sync-progress # displayed "Blockchain Sync"
+  - peer-connections # displayed "Peer Connections"
+  - tor # displayed "Tor"
+  - clearnet # displayed "Clearnet"
 ```
-
