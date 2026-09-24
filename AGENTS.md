@@ -40,14 +40,14 @@ near-replica of that copy: every difference must be one of those listed below.
 - **Syncing with Start9-Community:** `git merge` their `master` into ours, never
   rebase or force-push. Take their side for packaging, layout, docs and CI;
   keep only the deliberate differences below.
-- **Branches:** `master` is released — every push to it runs Tag and Release.
-  Work happens on short-lived branches and reaches `master` through a PR.
+- **Branches:** `master` is released — every push to it runs Tag and Release,
+  and so does the upstream bot's dispatch after an auto-bump.
   `next` is kept on purpose: Start9's Sync Next workflow mirrors `master` into
   it, so do not delete it.
 - **Versions:** `<upstream>:<revision>` in the single `startos/versions/current.ts`.
   Never change the upstream part by hand; a new upstream starts at `:0` (the
-  auto-bump PR does this). Bump the revision once per shipped package change —
-  not for docs, CI or archive changes. `ALLOW_DOWNGRADE` stays `false` unless a
+  auto-bump does this). The revision is bumped only when the maintainer
+  decides — never for alignment, template, docs, CI or archive changes. `ALLOW_DOWNGRADE` stays `false` unless a
   release is known to be reversible.
 - **`assets/` vs `archive/`:** `assets/` is packed into the s9pk as a whole, so
   it holds only `.gitkeep` unless the service reads a file at runtime.
@@ -71,4 +71,4 @@ near-replica of that copy: every difference must be one of those listed below.
   byte-identical to it unless a difference is listed below. When the template,
   SDK or CLI moves, update every package. Where the template and the
   Start9-Community copy disagree, the template wins.
-- **Deliberate differences from Start9-Community:** newer upstream BCHN; fixes Start9 lacks (`minrelaytxfee` must be above 0 and is only written when set, the ancestor/descendant limit options removed upstream in 23.1.0 are stripped, RPC health calls retry); `ALLOW_DOWNGRADE` in `current.ts`; `check-upstream.yml` + `scripts/auto-bump.sh` (GitLab releases, opens a bump PR); `dependabot.yml`; `session-link-guard.yml`; `startos/fileModels/README.md`; `archive/`; the matching README/instructions notes.
+- **Deliberate differences from Start9-Community:** newer upstream BCHN; fixes Start9 lacks (`minrelaytxfee` must be above 0 and is only written when set, the ancestor/descendant limit options removed upstream in 23.1.0 are stripped, RPC health calls retry); `ALLOW_DOWNGRADE` in `current.ts`; `check-upstream.yml` + `scripts/auto-bump.sh` (GitLab releases, commits the bump to `master` and dispatches Tag and Release; `tagAndRelease.yml` accepts that dispatch); `dependabot.yml`; `session-link-guard.yml`; `startos/fileModels/README.md`; `archive/`; the matching README/instructions notes.
