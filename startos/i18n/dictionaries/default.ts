@@ -182,6 +182,18 @@ const dict = {
   'Sync: ${status}': 161,
   Complete: 162,
   'Node Runtime Info': 163,
+  // actions/config/mempool.ts
+  Configuration: 164,
+  // actions/credentials.ts
+  Credentials: 165,
+  // actions/deletePeers.ts
+  Maintenance: 166,
+  // actions/deleteTestNetworkData.ts
+  Testnet3: 167,
+  Testnet4: 168,
+  Scalenet: 169,
+  Chipnet: 170,
+  Regtest: 171,
 } as const
 
 /**

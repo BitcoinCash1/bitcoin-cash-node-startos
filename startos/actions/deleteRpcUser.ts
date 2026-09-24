@@ -13,7 +13,7 @@ export const deleteRpcUser = sdk.Action.withInput(
     ),
     warning: i18n('Selected RPC users will lose access on next restart.'),
     allowedStatuses: 'any' as const,
-    group: 'Credentials',
+    group: i18n('Credentials'),
     visibility: 'enabled' as const,
   }),
   // Dynamic spec — reads existing rpcauth usernames from bitcoin.conf

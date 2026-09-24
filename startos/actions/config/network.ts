@@ -36,7 +36,7 @@ export const networkConfig = sdk.Action.withInput(
       'Changing the network requires a node restart. RPC and P2P ports will change to match the selected network.',
     ),
     allowedStatuses: 'any',
-    group: 'Configuration',
+    group: i18n('Configuration'),
     visibility: 'enabled',
   }),
   networkSpec,

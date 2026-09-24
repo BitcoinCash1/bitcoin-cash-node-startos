@@ -13,7 +13,7 @@ export const reindexChainstate = sdk.Action.withoutInput(
       'This process rebuilds the chainstate database and can take several hours. The node will restart automatically.',
     ),
     allowedStatuses: 'any' as const,
-    group: 'Maintenance',
+    group: i18n('Maintenance'),
     visibility: 'enabled' as const,
   }),
   async ({ effects }) => {

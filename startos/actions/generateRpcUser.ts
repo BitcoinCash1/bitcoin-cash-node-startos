@@ -35,7 +35,7 @@ export const generateRpcUser = sdk.Action.withInput(
     ),
     warning: null,
     allowedStatuses: 'any' as const,
-    group: 'Credentials',
+    group: i18n('Credentials'),
     visibility: 'enabled' as const,
   }),
   spec,

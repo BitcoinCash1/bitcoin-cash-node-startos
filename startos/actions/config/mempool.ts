@@ -11,7 +11,7 @@ export const mempoolConfig = sdk.Action.withInput(
     ),
     warning: null,
     allowedStatuses: 'any',
-    group: 'Configuration',
+    group: i18n('Configuration'),
     visibility: 'enabled',
   }),
   fullConfigSpec.filter({

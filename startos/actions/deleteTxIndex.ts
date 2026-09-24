@@ -14,7 +14,7 @@ export const deleteTxIndex = sdk.Action.withoutInput(
       'The transaction index will be deleted. If txindex is enabled, it will be rebuilt on startup (this can take hours).',
     ),
     allowedStatuses: 'only-stopped' as const,
-    group: 'Maintenance',
+    group: i18n('Maintenance'),
     visibility: 'enabled' as const,
   }),
   async ({ effects }) => {

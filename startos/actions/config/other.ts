@@ -11,7 +11,7 @@ export const otherConfig = sdk.Action.withInput(
     ),
     warning: null,
     allowedStatuses: 'any' as const,
-    group: 'Configuration',
+    group: i18n('Configuration'),
     visibility: 'enabled' as const,
   }),
   fullConfigSpec.filter({

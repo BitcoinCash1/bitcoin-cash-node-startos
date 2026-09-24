@@ -15,7 +15,7 @@ export const viewCredentials = sdk.Action.withInput(
     ),
     warning: null,
     allowedStatuses: 'any',
-    group: 'Credentials',
+    group: i18n('Credentials'),
     visibility: 'enabled',
   }),
 

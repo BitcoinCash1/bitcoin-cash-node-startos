@@ -14,7 +14,7 @@ export const deletePeers = sdk.Action.withoutInput(
       'All known peer addresses will be lost. The node will need to rediscover peers on next startup, which may take a few minutes.',
     ),
     allowedStatuses: 'only-stopped' as const,
-    group: 'Maintenance',
+    group: i18n('Maintenance'),
     visibility: 'enabled' as const,
   }),
   async ({ effects }) => {
