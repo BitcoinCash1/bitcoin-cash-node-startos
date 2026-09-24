@@ -59,5 +59,7 @@ near-replica of that copy: every difference must be one of those listed below.
 - **Commit and PR hygiene:** no session links, `Co-Authored-By` trailers or
   "Generated with" footers in commit messages, PR descriptions or comments.
   The Session Link Guard workflow fails any PR or push that carries one.
-  Commits are authored by the maintainer.
+  Commits are authored by the maintainer, and all repository text (code
+  comments, docs, commit messages, PR text) is written in the maintainer's
+  voice, without naming the tools used to produce it.
 - **Deliberate differences from Start9-Community:** newer upstream BCHN; fixes Start9 lacks (`minrelaytxfee` must be above 0 and is only written when set, the ancestor/descendant limit options removed upstream in 23.1.0 are stripped, RPC health calls retry); `ALLOW_DOWNGRADE` in `current.ts`; `check-upstream.yml` + `scripts/auto-bump.sh` (GitLab releases, opens a bump PR); `dependabot.yml`; `session-link-guard.yml`; `startos/fileModels/README.md`; `archive/`; the matching README/instructions notes.
