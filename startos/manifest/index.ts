@@ -5,14 +5,10 @@ export const manifest = setupManifest({
   id: 'bitcoincashd',
   title: 'Bitcoin Cash Node (BCHN)',
   license: 'MIT',
-  packageRepo: 'https://github.com/BitcoinCash1/bitcoin-cash-node-startos',
+  packageRepo: 'https://github.com/Start9-Community/bitcoin-cash-node-startos',
   upstreamRepo: 'https://gitlab.com/bitcoin-cash-node/bitcoin-cash-node',
   marketingUrl: 'https://bitcoincashnode.org/',
   donationUrl: 'bitcoincash:prnc2exht3zxlrqqcat690tc85cvfuypngh7szx6mk',
-  docsUrls: [
-    'https://github.com/BitcoinCash1/bitcoin-cash-node-startos/blob/master/instructions.md',
-    'https://gitlab.com/bitcoin-cash-node/bitcoin-cash-node',
-  ],
   description: { short, long },
   volumes: ['main'],
   images: {

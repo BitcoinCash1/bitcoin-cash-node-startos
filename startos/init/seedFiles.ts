@@ -4,8 +4,7 @@ import { storeJson } from '../fileModels/store.json'
 import { bitcoinConfFile } from '../fileModels/bitcoin.conf'
 
 function generatePassword(length = 32): string {
-  const chars =
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
   let result = ''
   for (let i = 0; i < length; i++) {
     result += chars[Math.floor(Math.random() * chars.length)]
@@ -18,7 +17,10 @@ export const seedFiles = sdk.setupOnInit(async (effects, kind) => {
 
   const rpcPassword = generatePassword(32)
   // Dynamic dbcache: 25% of system RAM, capped at 5120 MB
-  const dbcache = Math.min(Math.floor((totalmem() * 0.25) / (1024 * 1024)), 5120)
+  const dbcache = Math.min(
+    Math.floor((totalmem() * 0.25) / (1024 * 1024)),
+    5120,
+  )
 
   await storeJson.merge(effects, {
     rpcUser: 'bitcoincashd',
