@@ -24,7 +24,11 @@ export const deleteTxIndex = sdk.Action.withoutInput(
       mainMounts,
       'delete-txindex',
       async (sub) => {
-        await sub.exec(['rm', '-rf', `${rootDir}/indexes/txindex`])
+        await sub.exec(
+          ['rm', '-rf', `${rootDir}/indexes/txindex`],
+          undefined,
+          null,
+        )
       },
     )
     return {

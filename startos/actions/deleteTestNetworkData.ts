@@ -94,7 +94,7 @@ export const deleteTestNetworkData = sdk.Action.withInput(
           const subdir = testNetSubdirs[net]
           if (!subdir) continue
           const dataPath = `${rootDir}/${subdir}`
-          const res = await sub.exec(['rm', '-rf', dataPath])
+          const res = await sub.exec(['rm', '-rf', dataPath], undefined, null)
           if (res.exitCode === 0) removed.push(dataPath)
         }
       },
