@@ -8,23 +8,23 @@ export const short = {
 
 export const long = {
   en_US:
-    'Bitcoin Cash Node (BCHN) v29.1.0 — the reference C++ implementation of the Bitcoin Cash protocol. ' +
+    'Bitcoin Cash Node (BCHN) v29.2.0 — the reference C++ implementation of the Bitcoin Cash protocol. ' +
     'Provides JSON-RPC, ZMQ notifications, and Tor support. ' +
     'Supports mainnet, testnet3, testnet4, scalenet, chipnet, and regtest.',
   es_ES:
-    'Bitcoin Cash Node (BCHN) v29.1.0: la implementación de referencia en C++ del protocolo Bitcoin Cash. ' +
+    'Bitcoin Cash Node (BCHN) v29.2.0: la implementación de referencia en C++ del protocolo Bitcoin Cash. ' +
     'Ofrece JSON-RPC, notificaciones ZMQ y compatibilidad con Tor. ' +
     'Admite mainnet, testnet3, testnet4, scalenet, chipnet y regtest.',
   de_DE:
-    'Bitcoin Cash Node (BCHN) v29.1.0 – die C++-Referenzimplementierung des Bitcoin-Cash-Protokolls. ' +
+    'Bitcoin Cash Node (BCHN) v29.2.0 – die C++-Referenzimplementierung des Bitcoin-Cash-Protokolls. ' +
     'Bietet JSON-RPC, ZMQ-Benachrichtigungen und Tor-Unterstützung. ' +
     'Unterstützt mainnet, testnet3, testnet4, scalenet, chipnet und regtest.',
   pl_PL:
-    'Bitcoin Cash Node (BCHN) v29.1.0 — referencyjna implementacja protokołu Bitcoin Cash w C++. ' +
+    'Bitcoin Cash Node (BCHN) v29.2.0 — referencyjna implementacja protokołu Bitcoin Cash w C++. ' +
     'Zapewnia JSON-RPC, powiadomienia ZMQ i obsługę Tor. ' +
     'Obsługuje mainnet, testnet3, testnet4, scalenet, chipnet i regtest.',
   fr_FR:
-    'Bitcoin Cash Node (BCHN) v29.1.0 : l’implémentation de référence en C++ du protocole Bitcoin Cash. ' +
+    'Bitcoin Cash Node (BCHN) v29.2.0 : l’implémentation de référence en C++ du protocole Bitcoin Cash. ' +
     'Fournit JSON-RPC, les notifications ZMQ et la prise en charge de Tor. ' +
     'Prend en charge mainnet, testnet3, testnet4, scalenet, chipnet et regtest.',
 }
